@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basketball Action Tracker</title>
+
+    <!--- Bootstrap CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+
+
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="mt-4 p-5 bg-dark text-white">
+            <h1>Pell City Play Tracker</h1>
+            <p>Select the action and players below and enter the outcome of the play.</p>
+            <p>Submit the play to add it to the list.</p>
+            <p>Click view averages to view the average points scored per action</p>
+        </div>
+
+        <br>
+
+        <form id="play-form">
+
+            <div class="container mt-12">
+                <h3>Select Situation</h3>
+                <p>Select Half-Court or Fast Break</p>
+
+                <div id="situation-menu">
+                    <select class="form-control" id="situation-select">
+                        <option value="default">Select Situation...</option>
+                        <option value="half-court">Half-Court</option>
+                        <option value="fast-break">Fast Break</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="container mt-12">
+                <h3>Select Action</h3>
+                <p>Choose a play action from the menu below</p>
+    
+                <div id="action-menu">
+                    <select class="form-control" id="action-select">
+                        <option value="default">Select Action...</option>
+                        <!-- Populate options from playTracker.js -->
+                    </select>
+                </div>
+            </div>
+    
+            <hr>
+    
+            <div class="container mt-12">
+                <div id="player-select">
+                    <h3>Select Players</h3>
+                    <p>Choose the players involved in the play</p>
+                    
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-1" id="player-1">
+                                <label class="form-check-label" for="player-1">Player 1</label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-2" id="player-2">
+                                <label class="form-check-label" for="player-2">Player 2</label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-3" id="player-3">
+                                <label class="form-check-label" for="player-3">Player 3</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-4" id="player-4">
+                                <label class="form-check-label" for="player-4">Player 4</label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-5" id="player-5">
+                                <label class="form-check-label" for="player-5">Player 5</label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-6" id="player-6">
+                                <label class="form-check-label" for="player-6">Player 6</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-7" id="player-7">
+                                <label class="form-check-label" for="player-7">Player 7</label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-8" id="player-8">
+                                <label class="form-check-label" for="player-8">Player 8</label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-9" id="player-9">
+                                <label class="form-check-label" for="player-9">Player 9</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-10" id="player-10">
+                                <label class="form-check-label" for="player-10">Player 10</label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-11" id="player-11">
+                                <label class="form-check-label" for="player-11">Player 11</label>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="player-12" id="player-12">
+                                <label class="form-check-label" for="player-12">Player 12</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="container mt-12">
+                <div id="outcome">
+                    <h3>Play Outcome</h3>
+                    <p>Enter the outcome of the play</p>
+
+                    
+                    <span>
+                        <select class="form-select" id="outcome-select">
+                        <option value="default">Select Outcome...</option>
+                        <option value="0">0 Points</option>
+                        <option value="1">1 Point</option>
+                        <option value="2">2 Points</option>
+                        <option value="3">3 Points</option>
+                        <option value="turnover">Turnover</option>
+                        <option value="end-of-period">End of Period</option>
+                    </select>
+
+                    </span>
+                    
+                </div>
+
+            </div>
+
+            <hr>
+
+            <div class="container mt-12">
+                <button type="button" id="submit" class="btn btn-primary" onclick="addPlay()">Submit Play</button>
+                
+                <button type="button" id="remove-last" class="btn btn-primary" onclick="removePlay()">Remove Last Play</button>
+                
+                <button type="button" id="view-plays" class="btn btn-primary" onclick="viewPlays()">View Plays</button>
+
+                <button type="button" id="view-averages-by-play" class="btn btn-primary" onclick="displayAveragesByPlay()">View Averages By Play Type</button>
+
+                <button type="button" id="view-averages-by-player" class="btn btn-primary" onclick="displayAveragesByPlayer()">View Averages By Player</button>
+            </div>
+
+        </form>
+    </div>
+
+    <div id="display"></div>
+
+    <!-- playTracker JavaScript -->
+    <script src="playTracker.js"></script>
+
+</body>
+</html>
