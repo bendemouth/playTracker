@@ -68,8 +68,10 @@ function addPlay() {
     let playOutcome = document.getElementById('outcome-select').value;
 
     let situation = document.getElementById('situation-select').value;
+
+    console.log(action, playOutcome, situation); // Debugging
     
-    if (action === 'default' || playOutcome === 'default') {
+    if (action === 'default' || playOutcome === 'default' || situation === 'default') {
         document.getElementById('display').innerHTML = `
         <div class="container mt-12">
         <h4>Please select an action and play outcome</h4>
@@ -83,14 +85,15 @@ function addPlay() {
 
     playNumber+=1;
 
-    playTracker['playSituation'].push(situation);
-    
-    playTracker['playNumber'].push(playNumber);
-
     let selectedPlayers = [];
+
     document.querySelectorAll("#player-select input[type=checkbox]:checked").forEach((checkbox) => {
         selectedPlayers.push(checkbox.value)
     });
+
+    playTracker['playNumber'].push(playNumber);
+
+    playTracker['playSituation'].push(situation);
 
     playTracker['players'].push(selectedPlayers);
 
@@ -98,11 +101,35 @@ function addPlay() {
 
     playTracker['playResult'].push(playOutcome);
 
-    document.getElementById('display').innerHTML = `
-    <div class="container mt-12">
-    <h4>Play ${playNumber} added successfully!</h4>
-    </div>
-    `;
+    const playData = {
+        playNumber: playNumber,
+        playSituation: situation,
+        players: selectedPlayers,
+        playAction: action,
+        playResult: playOutcome
+    };
+
+    console.log(playData); // Debugging
+
+    // Add play to database (IMPORTANT)
+    fetch('http://localhost:1433/api/plays', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(playData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+        document.getElementById('display').innerHTML = `
+            <div class="container mt-12">
+            <h4>Play ${playNumber} added successfully!</h4>
+            </div>`;
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
 
     document.getElementById('situation-select').value = 'default';
 
