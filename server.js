@@ -6,6 +6,11 @@ require('dotenv').config(); // Load environment variables from .env file
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Serve static files
+const path = require('path');
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public'))); 
+
 app.use(express.json());
 
 // MSAL configuration
@@ -100,5 +105,44 @@ app.listen(port, () => {
   connectWithRetry().catch(error => {
     console.error('Failed to connect after retries:', error);
   });
+});
+
+// Add APIs to post to the database
+app.post('/api/plays', async (req, res) => {
+  try {
+    const { playNumber, playSituation, players, playAction, playResult } = req.body;
+
+      console.log("Received data: ", req.body);
+
+      const pool = await sql.connect({
+          server: process.env.DB_SERVER,
+          database: process.env.DB_DATABASE,
+          authentication: {
+              type: 'azure-active-directory-access-token',
+              options: { token: await getToken() }
+          },
+          options: { encrypt: true }
+      });
+
+      const query = `
+      INSERT INTO PellCityBoys2425 
+      ([play-number], [play_situation], [players-involved], [play-action], [play-result])
+      VALUES (@playNumber, @playSituation, @playersInvolved, @playAction, @playResult)
+    `;
+    
+
+      await pool.request()
+          .input('playNumber', sql.Int, req.body.playNumber)
+          .input('playSituation', sql.NVarChar, req.body.playSituation)
+          .input('playersInvolved', sql.NVarChar, JSON.stringify(req.body.players))  // Convert array to JSON string
+          .input('playAction', sql.NVarChar, req.body.playAction)
+          .input('playResult', sql.NVarChar, req.body.playResult)
+          .query(query);
+
+      res.status(200).json({ message: 'Play added successfully!' });
+  } catch (err) {
+      console.error('Error inserting play:', err);
+      res.status(500).json({ message: 'Database insert failed.' });
+  }
 });
 
