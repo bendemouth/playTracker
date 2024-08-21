@@ -112,7 +112,7 @@ function addPlay() {
     console.log(playData); // Debugging
 
     // Add play to database (IMPORTANT)
-    fetch('http://localhost:1433/api/plays', {
+    fetch('http://localhost:3000/api/plays', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -229,96 +229,96 @@ function pointsPerAction() {
     for (let i=0; i < playTracker['playNumber'].length; i++) {
 
         if (playTracker['playAction'][i] === 'horns') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['horns'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['horns'].push(0);
             }
 
         }
 
         if (playTracker['playAction'][i] === 'pick-roll') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['pick-roll'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['pick-roll'].push(0);
             }
 
         }
 
         if (playTracker['playAction'][i] === 'pick-pop') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['pick-pop'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['pick-pop'].push(0);
             }
 
         }
 
         if (playTracker['playAction'][i] === 'elevator') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['elevator'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['elevator'].push(0);
             }
 
         }
 
         if (playTracker['playAction'][i] === 'flare') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['flare'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['flare'].push(0);
             }
 
         }
 
         if (playTracker['playAction'][i] === 'paint-layup') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['paint-layup'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['paint-layup'].push(0);
             }
         }
 
         if (playTracker['playAction'][i] === 'paint-kick') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['paint-kick'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['paint-kick'].push(0);
             }
         }
 
         if (playTracker['playAction'][i] === 'pass-ahead-layup') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['pass-ahead-layup'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['pass-ahead-layup'].push(0);
             }
         }
 
         if (playTracker['playAction'][i] === 'pass-ahead-jumper') {
-            if (playTracker['playResult'][i] !== 'turnover') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
                 actionAverages['pass-ahead-jumper'].push(parseInt(playTracker['playResult'][i]));
             }
 
-            else if (playTracker['playResult'][i] === 'turnover') {
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
                 actionAverages['pass-ahead-jumper'].push(0);
             }
         }

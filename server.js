@@ -107,7 +107,7 @@ app.listen(port, () => {
   });
 });
 
-// Add APIs to post to the database
+// Add APIs to POST to the database
 app.post('/api/plays', async (req, res) => {
   try {
     const { playNumber, playSituation, players, playAction, playResult } = req.body;
@@ -146,3 +146,23 @@ app.post('/api/plays', async (req, res) => {
   }
 });
 
+// Add APIs to GET from the database
+app.get('/api/plays', async (req, res) => {
+  try {
+    const pool = await sql.connect({
+        server: process.env.DB_SERVER,
+        database: process.env.DB_DATABASE,
+        authentication: {
+            type: 'azure-active-directory-access-token',
+            options: { token: await getToken() }
+        },
+        options: { encrypt: true }
+    });
+    const result = await pool.request().query('SELECT * FROM PellCityBoys2425');
+
+    res.status(200).json(result.recordset);
+  } catch (err) {
+    console.error('Error retrieving plays:', err);
+    res.status(500).json({ message: 'Database retrieval failed.' });
+  }
+});
