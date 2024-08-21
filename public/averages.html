@@ -19,9 +19,26 @@
     <div class="container-fluid">
         <div class="mt-4 p-5 bg-dark text-white text-center">
             <h1>Pell City Play Averages Viewer</h1>
+
+            <div class="mt-4">
+                <button type="button" id="view-averages-by-situation" class="btn btn-light" onclick="displayAveragesBySituation()">View Averages By Situation</button>
+                
+                <button type="button" id="view-averages-by-play" class="btn btn-light" onclick="displayAveragesByPlayType()">View Averages By Play Type</button>
+                
+                <button type="button" id="view-averages-by-player" class="btn btn-light" onclick="displayAveragesByPlayer()">View Averages By Player</button>
+                
+                <a href="index.html">
+                    <button type="button" id="return-home" class="btn btn-light">Return Home</button>
+                </a>
+            </div>
+
         </div>
 
         <br>
+
+        <div class="text-center">
+            
+        </div>
 
         <div id="display">
             <!-- Display queried data -->
@@ -29,6 +46,8 @@
 
 
     </div>
+
+    <script src="averages.js"></script>
 
 </body>
 </html>
