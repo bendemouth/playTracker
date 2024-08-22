@@ -12,11 +12,10 @@ const path = require('path');
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
-app.use(express.json());
 
 // Configure CORS
 app.use(cors({
-  origin: 'http://bendemouthwdv101.us.tempcloudsite.com/',
+  origin: 'http://bendemouthwdv101.us.tempcloudsite.com',
   methods: ['GET', 'POST']
 }));
 
