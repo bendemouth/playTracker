@@ -112,7 +112,7 @@ function addPlay() {
     console.log(playData); // Debugging
 
     // Add play to database (IMPORTANT)
-    fetch('http://localhost:3000/api/plays', {
+    fetch('http://bendemouthwdv101.us.tempcloudsite.com/api/plays', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

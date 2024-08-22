@@ -2,6 +2,7 @@ const express = require('express');
 const sql = require('mssql');
 const msal = require('@azure/msal-node');
 require('dotenv').config(); // Load environment variables from .env file
+const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,6 +13,12 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
 app.use(express.json());
+
+// Configure CORS
+app.use(cors({
+  origin: 'http://bendemouthwdv101.us.tempcloudsite.com/',
+  methods: ['GET', 'POST']
+}));
 
 // MSAL configuration
 const msalConfig = {
