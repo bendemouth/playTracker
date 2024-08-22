@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error during login:', error);
-            alert('An error occurred. Please try again later.');
+            alert('An error occurred. Please contact account admin for help.');
         }
     });
 });
