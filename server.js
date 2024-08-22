@@ -146,7 +146,7 @@ app.post('/api/plays', async (req, res) => {
   }
 });
 
-// Add APIs to GET from the database
+// Add APIs to GET play data from the database
 app.get('/api/plays', async (req, res) => {
   try {
     const pool = await sql.connect({
@@ -163,6 +163,38 @@ app.get('/api/plays', async (req, res) => {
     res.status(200).json(result.recordset);
   } catch (err) {
     console.error('Error retrieving plays:', err);
+    res.status(500).json({ message: 'Database retrieval failed.' });
+  }
+});
+
+// Add API to check user login information
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const pool = await sql.connect({
+      server: process.env.DB_SERVER,
+      database: process.env.DB_DATABASE,
+      authentication: {
+        type: 'azure-active-directory-access-token',
+        options: { token: await getToken() }
+      },
+      options: { encrypt: true }
+    });
+
+    // Query the database for the provided username and password
+    const result = await pool.request()
+      .input('username', sql.NVarChar, username)
+      .input('password', sql.NVarChar, password)
+      .query('SELECT * FROM LoginInfo WHERE username = @username AND password = @password');
+
+    if (result.recordset.length > 0) {
+      res.status(200).json({ success: true });
+    } else {
+      res.status(401).json({ success: false, message: 'Invalid username or password' });
+    }
+  } catch (err) {
+    console.error('Error during login:', err);
     res.status(500).json({ message: 'Database retrieval failed.' });
   }
 });
