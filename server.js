@@ -13,15 +13,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
 
-// Configure CORS
-app.use(cors({
-  origin: 'http://bendemouthwdv101.us.tempcloudsite.com',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorizations'],
-  credentials: true
-}));
 
-app.options('*', cors());
 
 // MSAL configuration
 const msalConfig = {
