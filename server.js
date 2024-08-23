@@ -16,8 +16,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Configure CORS
 app.use(cors({
   origin: 'http://bendemouthwdv101.us.tempcloudsite.com',
-  methods: ['GET', 'POST']
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorizations'],
+  credentials: true
 }));
+
+app.options('*', cors());
 
 // MSAL configuration
 const msalConfig = {
@@ -189,10 +193,7 @@ app.post('/api/login', async (req, res) => {
     });
 
     // Query the database for the provided username and password
-    const result = await pool.request()
-      .input('username', sql.NVarChar, username)
-      .input('password', sql.NVarChar, password)
-      .query('SELECT * FROM LoginInfo WHERE username = @username AND password = @password');
+    const result = await pool.request().input('username', sql.NVarChar, username).input('password', sql.NVarChar, password).query('SELECT * FROM LoginInfo WHERE username = @username AND password = @password');
 
     if (result.recordset.length > 0) {
       res.status(200).json({ success: true });
