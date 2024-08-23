@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let passwordEntered = document.getElementById('password').value;
 
         try {
-            const response = await fetch('http://bendemouthwdv101.us.tempcloudsite.com/api/plays', {
+            const response = await fetch('http://bendemouthwdv101.us.tempcloudsite.com/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
