@@ -3,7 +3,7 @@ let data = [];
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         // Fetch data from API
-        const response = await fetch("http://bendemouthwdv101.us.tempcloudsite.com/api/plays");
+        const response = await fetch("http://localhost:3000/api/plays");
         
         // Check HTTP response
         if (!response.ok) {
