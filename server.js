@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors({
   origin: 'http://bendemouthwdv101.us.tempcloudsite.com',
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorizations'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
