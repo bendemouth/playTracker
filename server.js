@@ -3,24 +3,31 @@ const sql = require('mssql');
 const msal = require('@azure/msal-node');
 require('dotenv').config(); // Load environment variables from .env file
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Serve static files
-const path = require('path');
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
 // Configure CORS
 app.use(cors({
-  origin: 'http://bendemouthwdv101.us.tempcloudsite.com',
+  origin: ['http://bendemouthwdv101.us.tempcloudsite.com', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
-app.options('*', cors());
+// Handle CORS preflight requests
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(204); // No Content
+});
 
 
 // MSAL configuration
