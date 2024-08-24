@@ -12,22 +12,6 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
-// Configure CORS
-app.use(cors({
-  origin: ['http://bendemouthwdv101.us.tempcloudsite.com', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-// Handle CORS preflight requests
-app.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(204); // No Content
-});
 
 
 // MSAL configuration
@@ -229,4 +213,8 @@ app.post('/api/login', async (req, res) => {
     console.error('Error during login:', err);
     res.status(500).json({ message: 'Database retrieval failed.' });
   }
+});
+
+app.get('/api/test', (req, res) => {
+  res.status(200).json({ success: true });
 });
