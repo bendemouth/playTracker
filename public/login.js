@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.success) {
-                window.location.href = 'index.html';
+                window.location.href = 'homepage.html';
             } else {
                 alert('Incorrect username or password. Please try again.');
             }
