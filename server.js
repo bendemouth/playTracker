@@ -168,22 +168,10 @@ app.get('/api/plays', async (req, res) => {
   }
 });
 
-// Handle CORS preflight requests for /api/login
-app.options('/api/login', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(204); // No Content
-});
 
 // Add API to check user login information
 app.post('/api/login', async (req, res) => {
-  // Set CORS headers manually (optional, if not using the middleware globally)
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
   
   const { username, password } = req.body;
 

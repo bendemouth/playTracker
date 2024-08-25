@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let passwordEntered = document.getElementById('password').value;
 
         try {
-            const response = await fetch('http://pell-city.bestfitsportsdata.com/api/login', {
+            const response = await fetch('http://localhost:25571/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
