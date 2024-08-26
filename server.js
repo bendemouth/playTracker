@@ -1,25 +1,27 @@
 const express = require('express');
 const sql = require('mssql');
 const msal = require('@azure/msal-node');
-require('dotenv').config(); // Load environment variables from .env file
 const cors = require('cors');
 const path = require('path');
+const config = require('./config/config');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = config.PORT || 3000;
 
 // Serve static files
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
-
+app.use(cors(
+  {origin: 'http://pell-city.bestfitsportsdata.com'},
+))
 
 // MSAL configuration
 const msalConfig = {
   auth: {
-    clientId: process.env.AZURE_CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}`,
-    clientSecret: process.env.AZURE_CLIENT_SECRET
+    clientId: config.AZURE_CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${config.AZURE_TENANT_ID}`,
+    clientSecret: config.AZURE_CLIENT_SECRET
   }
 };
 
@@ -54,8 +56,8 @@ async function connectToDatabase() {
   try {
     const token = await getToken();
     const dbConfig = {
-      server: process.env.DB_SERVER,
-      database: process.env.DB_DATABASE,
+      server: config.DB_SERVER,
+      database: config.DB_DATABASE,
       authentication: {
         type: 'azure-active-directory-access-token',
         options: {
@@ -99,7 +101,7 @@ async function connectWithRetry(retries = 3) {
 }
 
 // Start the server
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 
   // Attempt to connect to the database when the server starts
@@ -116,8 +118,8 @@ app.post('/api/plays', async (req, res) => {
       console.log("Received data: ", req.body);
 
       const pool = await sql.connect({
-          server: process.env.DB_SERVER,
-          database: process.env.DB_DATABASE,
+          server: config.DB_SERVER,
+          database: config.DB_DATABASE,
           authentication: {
               type: 'azure-active-directory-access-token',
               options: { token: await getToken() }
@@ -127,7 +129,7 @@ app.post('/api/plays', async (req, res) => {
 
       const query = `
       INSERT INTO PellCityBoys2425 
-      ([play-number], [play_situation], [players-involved], [play-action], [play-result])
+      ([play-number], [play-situation], [players-involved], [play-action], [play-result])
       VALUES (@playNumber, @playSituation, @playersInvolved, @playAction, @playResult)
     `;
     
@@ -151,8 +153,8 @@ app.post('/api/plays', async (req, res) => {
 app.get('/api/plays', async (req, res) => {
   try {
     const pool = await sql.connect({
-        server: process.env.DB_SERVER,
-        database: process.env.DB_DATABASE,
+        server: config.DB_SERVER,
+        database: config.DB_DATABASE,
         authentication: {
             type: 'azure-active-directory-access-token',
             options: { token: await getToken() }
@@ -177,8 +179,8 @@ app.post('/api/login', async (req, res) => {
 
   try {
     const pool = await sql.connect({
-      server: process.env.DB_SERVER,
-      database: process.env.DB_DATABASE,
+      server: config.DB_SERVER,
+      database: config.DB_DATABASE,
       authentication: {
         type: 'azure-active-directory-access-token',
         options: { token: await getToken() }
@@ -203,6 +205,3 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-app.get('/api/test', (req, res) => {
-  res.status(200).json({ success: true });
-});
