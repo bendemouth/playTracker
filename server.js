@@ -110,7 +110,7 @@ app.listen(port, '0.0.0.0', () => {
   });
 });
 
-// Add APIs to POST to the database
+// Add APIs to POST plays to the database
 app.post('/api/plays', async (req, res) => {
   try {
     const { playNumber, playSituation, players, playAction, playResult } = req.body;
@@ -205,3 +205,30 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+
+// Add API to delete most recent play from database
+app.delete('/api/plays', async (req, res) => {
+  try {
+      // Assuming `db` is your Azure SQL connection pool or connection instance
+      const request = new sql.Request();
+
+      // SQL Query to delete the most recent play
+      const query = `
+          DELETE FROM PellCityBoys2425
+          WHERE [play-id] = (
+              SELECT TOP 1 [play-id]
+              FROM PellCityBoys2425
+              ORDER BY [play-id] DESC
+          );
+      `;
+
+      // Execute the query
+      await request.query(query);
+
+      // Send success response
+      res.status(200).json({ message: 'Most recent play deleted successfully' });
+  } catch (error) {
+      console.error('Error deleting the most recent play:', error);
+      res.status(500).json({ error: 'Failed to delete the most recent play' });
+  }
+});

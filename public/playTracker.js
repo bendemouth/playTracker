@@ -62,6 +62,7 @@ function updateActionMenu(situation) {
 
 
 // Add a play to the tracker
+
 function addPlay() {
     let action = document.getElementById('action-select').value;
 
@@ -147,20 +148,41 @@ function addPlay() {
 
 // Remove the last play from the tracker
 function removePlay() {
-    playNumber-=1;
+    if (playTracker['playNumber'].length === 0) {
+        document.getElementById('display').innerHTML = `
+        <div class="container mt-12">
+        <h4>No plays to remove!</h4>
+        <h6>Contact Ben DeMouth for assistance with deleting older plays.</h6>
+        </div>
+        `;
+        return;
+    }
 
-    playTracker['playNumber'].pop();
-    playTracker['playSituation'].pop();
-    playTracker['players'].pop();
-    playTracker['playAction'].pop();
-    playTracker['playResult'].pop();
+    fetch(`http://pell-city.bestfitsportsdata.com:25571/api/plays`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-    document.getElementById('display').innerHTML = `
-    <div class="container mt-12">
-    <h4>Play removed successfully!</h4>
-    </div>
-    `;
+        playNumber-=1;
 
+        playTracker['playNumber'].pop();
+        playTracker['playSituation'].pop();
+        playTracker['players'].pop();
+        playTracker['playAction'].pop();
+        playTracker['playResult'].pop();
+
+        document.getElementById('display').innerHTML = `
+        <div class="container mt-12">
+        <h4>Play removed successfully!</h4>
+        </div>
+        `;
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
 }
 
 // View the plays in the tracker
