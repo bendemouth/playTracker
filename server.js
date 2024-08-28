@@ -34,15 +34,25 @@ const tokenRequest = {
 let tokenCache = null;
 let tokenExpiry = null;
 
-// Function to acquire a new token if needed
+const TOKEN_EXPIRY_BUFFER = 30 * 60 * 1000; // 30 minutes in milliseconds buffer for token expiration
+
+// Function to acquire token
 async function getToken() {
-  if (!tokenCache || Date.now() >= tokenExpiry) {
+  if (!tokenCache || Date.now() >= (tokenExpiry - TOKEN_EXPIRY_BUFFER)) {
     try {
       const response = await cca.acquireTokenByClientCredential(tokenRequest);
-      tokenCache = response.accessToken;
-      tokenExpiry = Date.now() + (response.expiresIn * 1000); // Token expiry time
-      console.log("New token acquired");
-      console.log("Acquired Token:", tokenCache);  // Log the token here
+      console.log("Token response: ", response);  // Log the entire response
+
+      if (response && response.expiresOn) {
+        tokenCache = response.accessToken;
+        
+        // Set tokenExpiry based on the actual expiresOn timestamp
+        tokenExpiry = new Date(response.expiresOn).getTime();
+        console.log("New token acquired. Actual expiry at:", new Date(tokenExpiry).toLocaleString());
+      } else {
+        console.error("Unexpected token response: 'expiresOn' is missing.");
+      }
+
     } catch (error) {
       console.error("Error acquiring token:", error);
       throw error;
@@ -50,6 +60,26 @@ async function getToken() {
   }
   return tokenCache;
 }
+
+
+// Automatic token renewal function
+const TOKEN_EXPIRY_CHECK_INTERVAL = 15 * 60 * 1000; // Check every 15 minutes
+
+function backgroundTokenRenewal() {
+  setInterval(async () => {
+    if (Date.now() >= (tokenExpiry - TOKEN_EXPIRY_BUFFER)) {
+      console.log("Token is nearing expiration, renewing in background...");
+      try {
+        await getToken();  // This will renew the token if it's close to expiring
+      } catch (error) {
+        console.error("Error during background token renewal:", error);
+      }
+    } else {
+      console.log("Token is still valid, no need for background renewal.");
+    }
+  }, TOKEN_EXPIRY_CHECK_INTERVAL);
+}
+
 
 // Function to connect to the database
 async function connectToDatabase() {
@@ -103,6 +133,9 @@ async function connectWithRetry(retries = 3) {
 // Start the server
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
+
+  //Automatic token renewal function
+  backgroundTokenRenewal();
 
   // Attempt to connect to the database when the server starts
   connectWithRetry().catch(error => {
