@@ -27,6 +27,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     } catch (error) {
         console.error("Error fetching data:", error);
+        document.getElementById('display').innerHTML = `
+        <div class="alert alert-danger" role="alert">
+            Error fetching data: ${error.message}
+        </div>
+        `;
     }
 });
 
@@ -35,13 +40,10 @@ function getAveragesByPlayType() {
     let actionAverages = {
         'horns': [],
         'pick-roll': [],
-        'pick-pop': [],
-        'elevator': [],
-        'flare': [],
-        'paint-layup': [],
-        'paint-kick': [],
-        'pass-ahead-layup': [],
-        'pass-ahead-jumper': []
+        'point': [],
+        'drag': [],
+        'pass-ahead': [],
+        'paint-touch': []
     };
 
     for (let i = 0; i < data.length; i++) {
@@ -61,69 +63,49 @@ function getAveragesByPlayType() {
             }
         }
 
-        if (data[i]['play-action'] === 'pick-pop') {
+        if (data[i]['play-action'] === 'point') {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                actionAverages['pick-pop'].push(parseInt(data[i]['play-result']));
+                actionAverages['point'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                actionAverages['pick-pop'].push(0);
+                actionAverages['point'].push(0);
             }
         }
 
-        if (data[i]['play-action'] === 'elevator') {
+        if (data[i]['play-action'] === 'drag') {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                actionAverages['elevator'].push(parseInt(data[i]['play-result']));
+                actionAverages['drag'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                actionAverages['elevator'].push(0);
+                actionAverages['drag'].push(0);
             }
         }
 
-        if (data[i]['play-action'] === 'flare') {
+        if (data[i]['play-action'] === 'pass-ahead') {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                actionAverages['flare'].push(parseInt(data[i]['play-result']));
+                actionAverages['pass-ahead'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                actionAverages['flare'].push(0);
+                actionAverages['pass-ahead'].push(0);
             }
         }
 
-        if (data[i]['play-action'] === 'paint-layup') {
+        if (data[i]['play-action'] === 'paint-touch') {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                actionAverages['paint-layup'].push(parseInt(data[i]['play-result']));
+                actionAverages['paint-touch'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                actionAverages['paint-layup'].push(0);
+                actionAverages['paint-touch'].push(0);
             }
         }
 
-        if (data[i]['play-action'] === 'paint-kick') {
-            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                actionAverages['paint-kick'].push(parseInt(data[i]['play-result']));
-            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                actionAverages['paint-kick'].push(0);
-            }
-        }
-
-        if (data[i]['play-action'] === 'pass-ahead-layup') {
-            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                actionAverages['pass-ahead-layup'].push(parseInt(data[i]['play-result']));
-            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                actionAverages['pass-ahead-layup'].push(0);
-            }
-        }
-
-        if (data[i]['play-action'] === 'pass-ahead-jumper') {
-            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                actionAverages['pass-ahead-jumper'].push(parseInt(data[i]['play-result']));
-            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                actionAverages['pass-ahead-jumper'].push(0);
-            }
-        }
     }
 
     for (let action in actionAverages) {
-        let actionSum = actionAverages[action].reduce((sum, value) => sum + value, 0);
-        let count = actionAverages[action].length;
-
-        actionAverages[action] = count ? (actionSum / count).toFixed(2) : 0;
+        if (actionAverages[action].length === 0) {
+            actionAverages[action] = 0;  // Set to 0 if array is empty
+        } else {
+            let actionSum = actionAverages[action].reduce((sum, value) => sum + value, 0);
+            actionAverages[action] = (actionSum / actionAverages[action].length).toFixed(2);
+        }
     }
+    
 
     return actionAverages;
 }
@@ -131,18 +113,51 @@ function getAveragesByPlayType() {
 function displayAveragesByPlayType() {
     const actionAverages = getAveragesByPlayType();
 
-    let displayTop = '<table class="table table-striped"><tr><th>Action</th><th>Points per Action</th></tr><tbody>';
-    let displayBottom = '</tbody></table>';
-
-    for (let action in actionAverages) {
-        displayTop += `<tr><td>${action}</td><td>${actionAverages[action]}</td></tr>`;
-    }
-
     document.getElementById('display').innerHTML = `
-    <div class="container mt-12">
-    <h3>Average Points per Action</h3>
-    ${displayTop}
-    ${displayBottom}
+    <div class="container mt-5">
+    <h3>Half-Court Averages</h3>
+    <table class="table table-striped">
+        <tr>
+            <th>Action</th>
+            <th>Average Points</th>
+        </tr>
+        <tbody>
+            <tr class='table-warning'>
+                <td>Horns</td>
+                <td>${actionAverages['horns']}</td>
+            </tr>
+            <tr class='table-primary'>
+                <td>Pick & Roll</td>
+                <td>${actionAverages['pick-roll']}</td>
+            </tr>
+            <tr class='table-success'>
+                <td>Point</td>
+                <td>${actionAverages['point']}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Fast Break Averages</h3>
+    <table class="table table-striped">
+        <tr>
+            <th>Action</th>
+            <th>Average Points</th>
+        </tr>
+        <tbody>
+            <tr class='table-info'>
+                <td>Drag</td>
+                <td>${actionAverages['drag']}</td>
+            </tr>
+            <tr class='table-secondary'>
+                <td>Pass Ahead</td>
+                <td>${actionAverages['pass-ahead']}</td>
+            </tr>
+            <tr class='table-danger'>
+                <td>Paint Touch</td>    
+                <td>${actionAverages['paint-touch']}</td>
+            </tr>
+        </tbody>
+    </table>
     </div>
     `;
 }
@@ -150,123 +165,156 @@ function displayAveragesByPlayType() {
 
 function getAveragesByPlayer() {
     let playerAverages = {
-        'playerOne': [],
-        'playerTwo': [],
-        'playerThree': [],
-        'playerFour': [],
-        'playerFive': [],
-        'playerSix': [],
-        'playerSeven': [],
-        'playerEight': [],
-        'playerNine': [],
-        'playerTen': [],
-        'playerEleven': [],
-        'playerTwelve': []
+        'loganPreuss': [],
+        'sawyerGinn': [],
+        'djVerges': [],
+        'treyKuz': [],
+        'ethanIsbell': [],
+        'tylerKuz': [],
+        'tjSanders': [],
+        'haganCalvin': [],
+        'brodyGossett': [],
+        'jemarcClegg': [],
+        'connorChandler': [],
+        'tristanAnderson': [],
+        'elliotHuckaby': [],
+        'khaliThompson': [],
+        'jordanWoods': []
     };
 
     for (let i = 0; i < data.length; i++) {
         
-        if (data[i]['players-involved'].includes('player-1')) {
+        if (data[i]['players-involved'].includes('logan-preuss')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerOne'].push(parseInt(data[i]['play-result']));
+                playerAverages['loganPreuss'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerOne'].push(0);
+                playerAverages['loganPreuss'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-2')) {
+        if (data[i]['players-involved'].includes('sawyer-ginn')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerTwo'].push(parseInt(data[i]['play-result']));
+                playerAverages['sawyerGinn'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerTwo'].push(0);
+                playerAverages['sawyerGinn'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-3')) {
+        if (data[i]['players-involved'].includes('dj-verges')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerThree'].push(parseInt(data[i]['play-result']));
+                playerAverages['djVerges'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerThree'].push(0);
+                playerAverages['djVerges'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-4')) {
+        if (data[i]['players-involved'].includes('trey-kuz')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerFour'].push(parseInt(data[i]['play-result']));
+                playerAverages['treyKuz'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerFour'].push(0);
+                playerAverages['treyKuz'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-5')) {
+        if (data[i]['players-involved'].includes('ethan-isbell')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerFive'].push(parseInt(data[i]['play-result']));
+                playerAverages['ethanIsbell'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerFive'].push(0);
+                playerAverages['ethanIsbell'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-6')) {
+        if (data[i]['players-involved'].includes('tyler-kuz')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerSix'].push(parseInt(data[i]['play-result']));
+                playerAverages['tylerKuz'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerSix'].push(0);
+                playerAverages['tylerKuz'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-7')) {
+        if (data[i]['players-involved'].includes('tj-sanders')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerSeven'].push(parseInt(data[i]['play-result']));
+                playerAverages['tjSanders'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerSeven'].push(0);
+                playerAverages['tjSanders'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-8')) {
+        if (data[i]['players-involved'].includes('hagan-calvin')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerEight'].push(parseInt(data[i]['play-result']));
+                playerAverages['haganCalvin'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerEight'].push(0);
+                playerAverages['haganCalvin'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-9')) {
+        if (data[i]['players-involved'].includes('brody-gossett')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerNine'].push(parseInt(data[i]['play-result']));
+                playerAverages['brodyGossett'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerNine'].push(0);
+                playerAverages['brodyGossett'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-10')) {
+        if (data[i]['players-involved'].includes('jemarc-clegg')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerTen'].push(parseInt(data[i]['play-result']));
+                playerAverages['jemarcClegg'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerTen'].push(0);
+                playerAverages['jemarcClegg'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-11')) {
+        if (data[i]['players-involved'].includes('connor-chandler')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerEleven'].push(parseInt(data[i]['play-result']));
+                playerAverages['connorChandler'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerEleven'].push(0);
+                playerAverages['connorChandler'].push(0);
             }
         }
 
-        if (data[i]['players-involved'].includes('player-12')) {
+        if (data[i]['players-involved'].includes('tristan-anderson')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['playerTwelve'].push(parseInt(data[i]['play-result']));
+                playerAverages['tristanAnderson'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['playerTwelve'].push(0);
+                playerAverages['tristanAnderson'].push(0);
+            }
+        }
+
+        if (data[i]['players-involved'].includes('elliot-huckaby')) {
+            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
+                playerAverages['elliotHuckaby'].push(parseInt(data[i]['play-result']));
+            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
+                playerAverages['elliotHuckaby'].push(0);
+            }
+        }
+
+        if (data[i]['players-involved'].includes('khali-thompson')) {
+            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
+                playerAverages['khaliThompson'].push(parseInt(data[i]['play-result']));
+            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
+                playerAverages['khaliThompson'].push(0);
+            }
+        }
+
+        if (data[i]['players-involved'].includes('jordan-woods')) {
+            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
+                playerAverages['jordanWoods'].push(parseInt(data[i]['play-result']));
+            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
+                playerAverages['jordanWoods'].push(0);
             }
         }
     }
 
 
     for (let player in playerAverages) {
-        playerAverages[player] = (playerAverages[player].reduce((a, b) => a + b, 0) / playerAverages[player].length).toFixed(2);
+        if (playerAverages[player].length === 0) {
+            playerAverages[player] = 0;  // Set to 0 if array is empty
+        } else {
+            let sumPoints = playerAverages[player].reduce((a, b) => a + b, 0);
+            playerAverages[player] = (sumPoints / playerAverages[player].length).toFixed(2);
+        }
     }
+    
 
     return playerAverages
 }
@@ -275,30 +323,79 @@ function displayAveragesByPlayer() {
 
     const playerAverages = getAveragesByPlayer();
 
-    let displayTop = `
-    <table class="table table-striped">
-    <tr>
-    <th>Player</th>
-    <th>Average Points</th>
-    </tr>
-    <tbody>
-    `;
-    let displayBottom = '</tbody></table>';
 
-    for (let player in playerAverages) {
-        displayTop += `
-        <tr>
-        <td>${player}</td>
-        <td>${playerAverages[player]}</td>
-        </tr>
-        `;
-    }
 
     document.getElementById('display').innerHTML = `
-    <div class="container mt-12">
+    <div class="container mt-5">
     <h3>Average Points per Player</h3>
-    ${displayTop}
-    ${displayBottom}
+    <table class="table table-striped">
+        <tr>
+            <th>Player</th>
+            <th>Average Points</th>
+        </tr>
+        <tbody>
+            <tr>
+                <td>Logan Preuss</td>
+                <td>${playerAverages['loganPreuss']}</td>
+            </tr>
+            <tr>
+                <td>Sawyer Ginn</td>
+                <td>${playerAverages['sawyerGinn']}</td>
+            </tr>
+            <tr>
+                <td>DJ Verges</td>
+                <td>${playerAverages['djVerges']}</td>
+            </tr>
+            <tr>
+                <td>Trey Kuz</td>
+                <td>${playerAverages['treyKuz']}</td>
+            </tr>
+            <tr>
+                <td>Ethan Isbell</td>
+                <td>${playerAverages['ethanIsbell']}</td>
+            </tr>
+            <tr>
+                <td>Tyler Kuz</td>
+                <td>${playerAverages['tylerKuz']}</td>
+            </tr>
+            <tr>
+                <td>TJ Sanders</td>
+                <td>${playerAverages['tjSanders']}</td>
+            </tr>
+            <tr>
+                <td>Hagan Calvin</td>
+                <td>${playerAverages['haganCalvin']}</td>
+            </tr>
+            <tr>
+                <td>Brody Gossett</td>
+                <td>${playerAverages['brodyGossett']}</td>
+            </tr>
+            <tr>
+                <td>Jemarc Clegg</td>
+                <td>${playerAverages['jemarcClegg']}</td>
+            </tr>
+            <tr>
+                <td>Connor Chandler</td>
+                <td>${playerAverages['connorChandler']}</td>
+            </tr>
+            <tr>
+                <td>Tristan Anderson</td>
+                <td>${playerAverages['tristanAnderson']}</td>
+            </tr>
+            <tr>
+                <td>Elliot Huckaby</td>
+                <td>${playerAverages['elliotHuckaby']}</td>
+            </tr>
+            <tr>
+                <td>Khali Thompson</td>
+                <td>${playerAverages['khaliThompson']}</td>
+            </tr>
+            <tr>
+                <td>Jordan Woods</td>
+                <td>${playerAverages['jordanWoods']}</td>
+            </tr>
+        </tbody>
+    </table>
     </div>
     `;
 }
@@ -327,8 +424,14 @@ function getAveragesBySituation() {
     }
 
     for (let situation in situationAverages) {
-        situationAverages[situation] = (situationAverages[situation].reduce((a, b) => a + b, 0) / situationAverages[situation].length).toFixed(2);
+        if (situationAverages[situation].length === 0) {
+            situationAverages[situation] = 0;  // Set to 0 if array is empty
+        } else {
+            let sumPoints = situationAverages[situation].reduce((a, b) => a + b, 0);
+            situationAverages[situation] = (sumPoints / situationAverages[situation].length).toFixed(2);
+        }
     }
+    
 
     return situationAverages
 }
@@ -337,30 +440,26 @@ function displayAveragesBySituation(){
 
     const situationAverages = getAveragesBySituation();
 
-    let displayTop = `
-    <table class="table table-striped">
-    <tr>
-    <th>Situation</th>
-    <th>Average Points</th>
-    </tr>
-    <tbody>
-    `;
-    let displayBottom = '</tbody></table>';
-
-    for (let situation in situationAverages) {
-        displayTop += `
-        <tr>
-        <td>${situation}</td>
-        <td>${situationAverages[situation]}</td>
-        </tr>
-        `;
-    }
 
     document.getElementById('display').innerHTML = `
-    <div class="container mt-12">
-    <h3>Average Points per Situation</h3>
-    ${displayTop}
-    ${displayBottom}
+    <div class="container mt-5">
+    <h3>Averages by Situation</h3>
+    <table>
+        <tr>
+            <th>Situation</th>
+            <th>Average Points</th>
+        </tr>
+        <tbody>
+            <tr>
+                <td>Half-Court</td>
+                <td>${situationAverages['halfcourt']}</td>
+            </tr>
+            <tr>
+                <td>Fast Break</td>
+                <td>${situationAverages['fastbreak']}</td>
+            </tr>
+        </tbody>
+    </table>
     </div>
     `;
 }
