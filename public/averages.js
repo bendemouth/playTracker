@@ -444,7 +444,7 @@ function displayAveragesBySituation(){
     document.getElementById('display').innerHTML = `
     <div class="container mt-5">
     <h3>Averages by Situation</h3>
-    <table>
+    <table class="table table-striped">
         <tr>
             <th>Situation</th>
             <th>Average Points</th>
