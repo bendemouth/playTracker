@@ -34,7 +34,7 @@ const tokenRequest = {
 let tokenCache = null;
 let tokenExpiry = null;
 
-const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes in milliseconds buffer for token expiration
+const TOKEN_EXPIRY_BUFFER = 30 * 60 * 1000; // 30 minutes in milliseconds buffer for token expiration
 
 // Function to acquire token
 async function getToken() {
@@ -45,9 +45,10 @@ async function getToken() {
 
       if (response && response.expiresOn) {
         tokenCache = response.accessToken;
-        // Calculate the token expiry in milliseconds
+        
+        // Set tokenExpiry based on the actual expiresOn timestamp
         tokenExpiry = new Date(response.expiresOn).getTime();
-        console.log("New token acquired. Expires at:", new Date(tokenExpiry).toLocaleString());
+        console.log("New token acquired. Actual expiry at:", new Date(tokenExpiry).toLocaleString());
       } else {
         console.error("Unexpected token response: 'expiresOn' is missing.");
       }
@@ -58,6 +59,25 @@ async function getToken() {
     }
   }
   return tokenCache;
+}
+
+
+// Automatic token renewal function
+const TOKEN_EXPIRY_CHECK_INTERVAL = 15 * 60 * 1000; // Check every 15 minutes
+
+function backgroundTokenRenewal() {
+  setInterval(async () => {
+    if (Date.now() >= (tokenExpiry - TOKEN_EXPIRY_BUFFER)) {
+      console.log("Token is nearing expiration, renewing in background...");
+      try {
+        await getToken();  // This will renew the token if it's close to expiring
+      } catch (error) {
+        console.error("Error during background token renewal:", error);
+      }
+    } else {
+      console.log("Token is still valid, no need for background renewal.");
+    }
+  }, TOKEN_EXPIRY_CHECK_INTERVAL);
 }
 
 
@@ -113,6 +133,9 @@ async function connectWithRetry(retries = 3) {
 // Start the server
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
+
+  //Automatic token renewal function
+  backgroundTokenRenewal();
 
   // Attempt to connect to the database when the server starts
   connectWithRetry().catch(error => {
