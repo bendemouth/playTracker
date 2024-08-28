@@ -34,23 +34,30 @@ const tokenRequest = {
 let tokenCache = null;
 let tokenExpiry = null;
 
-const TOKEN_EXPIRY_BUFFER = 30 * 60 * 1000; // 30 minutes in milliseconds buffer for token expiration
+const TOKEN_EXPIRY_BUFFER = 30 * 60 * 1000; // 30 minute buffer
 
 // Function to acquire token
 async function getToken() {
-  if (!tokenCache || Date.now() >= (tokenExpiry - TOKEN_EXPIRY_BUFFER)) {
+  // Check if tokenCache is empty or tokenExpiry is null
+  if (!tokenCache || !tokenExpiry || Date.now() >= (tokenExpiry - TOKEN_EXPIRY_BUFFER)) {
     try {
       const response = await cca.acquireTokenByClientCredential(tokenRequest);
       console.log("Token response: ", response);  // Log the entire response
 
       if (response && response.expiresOn) {
         tokenCache = response.accessToken;
+
+        // Convert expiresOn to a timestamp and validate it
+        const expiryTime = new Date(response.expiresOn).getTime();
         
-        // Set tokenExpiry based on the actual expiresOn timestamp
-        tokenExpiry = new Date(response.expiresOn).getTime();
-        console.log("New token acquired. Actual expiry at:", new Date(tokenExpiry).toLocaleString());
+        if (!isNaN(expiryTime)) {
+          tokenExpiry = expiryTime;
+          console.log("New token acquired. Actual expiry at:", new Date(tokenExpiry).toLocaleString());
+        } else {
+          console.error("Failed to parse expiresOn. Token expiry time is invalid.");
+        }
       } else {
-        console.error("Unexpected token response: 'expiresOn' is missing.");
+        console.error("Unexpected token response: 'expiresOn' is missing or invalid.");
       }
 
     } catch (error) {
@@ -58,8 +65,10 @@ async function getToken() {
       throw error;
     }
   }
+
   return tokenCache;
 }
+
 
 
 // Automatic token renewal function
@@ -67,18 +76,24 @@ const TOKEN_EXPIRY_CHECK_INTERVAL = 15 * 60 * 1000; // Check every 15 minutes
 
 function backgroundTokenRenewal() {
   setInterval(async () => {
-    if (Date.now() >= (tokenExpiry - TOKEN_EXPIRY_BUFFER)) {
-      console.log("Token is nearing expiration, renewing in background...");
-      try {
-        await getToken();  // This will renew the token if it's close to expiring
-      } catch (error) {
-        console.error("Error during background token renewal:", error);
+    console.log("Running background token renewal check...");
+
+    try {
+      // Check if the token is nearing expiration
+      if (!tokenExpiry || Date.now() >= (tokenExpiry - TOKEN_EXPIRY_BUFFER)) {
+        console.log("Token is nearing expiration, renewing in background...");
+        await getToken(); 
+        console.log("Background token renewal successful.");
+      } else {
+        console.log("Token is still valid, no need for background renewal.");
       }
-    } else {
-      console.log("Token is still valid, no need for background renewal.");
+    } catch (error) {
+      console.error("Error during background token renewal:", error);
+      
     }
   }, TOKEN_EXPIRY_CHECK_INTERVAL);
 }
+
 
 
 // Function to connect to the database
