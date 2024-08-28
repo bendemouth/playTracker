@@ -34,15 +34,24 @@ const tokenRequest = {
 let tokenCache = null;
 let tokenExpiry = null;
 
-// Function to acquire a new token if needed
+const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes in milliseconds buffer for token expiration
+
+// Function to acquire token
 async function getToken() {
-  if (!tokenCache || Date.now() >= tokenExpiry) {
+  if (!tokenCache || Date.now() >= (tokenExpiry - TOKEN_EXPIRY_BUFFER)) {
     try {
       const response = await cca.acquireTokenByClientCredential(tokenRequest);
-      tokenCache = response.accessToken;
-      tokenExpiry = Date.now() + (response.expiresIn * 1000); // Token expiry time
-      console.log("New token acquired");
-      console.log("Acquired Token:", tokenCache);  // Log the token here
+      console.log("Token response: ", response);  // Log the entire response
+
+      if (response && response.expiresOn) {
+        tokenCache = response.accessToken;
+        // Calculate the token expiry in milliseconds
+        tokenExpiry = new Date(response.expiresOn).getTime();
+        console.log("New token acquired. Expires at:", new Date(tokenExpiry).toLocaleString());
+      } else {
+        console.error("Unexpected token response: 'expiresOn' is missing.");
+      }
+
     } catch (error) {
       console.error("Error acquiring token:", error);
       throw error;
@@ -50,6 +59,7 @@ async function getToken() {
   }
   return tokenCache;
 }
+
 
 // Function to connect to the database
 async function connectToDatabase() {
