@@ -46,8 +46,17 @@
             </div>
         </div>
 
+        <hr>
+
+        <button id="loginButton">Login with Microsoft</button>
+
     </div>
     
     <script src="login.js"></script>
+    <script>
+        document.getElementById('loginButton').addEventListener('click', function() {
+            window.location.href = '/login';  // Redirect to the /login route
+        });
+    </script>
 </body>
 </html>
