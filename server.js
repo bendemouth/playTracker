@@ -8,7 +8,7 @@ const config = require('./config/config');
 const app = express();
 const port = config.PORT || 3000;
 
-// Serve static files
+// Serve files from the 'public' folder
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
