@@ -160,7 +160,7 @@ function removePlay() {
         return;
     }
 
-    fetch(`http://pell-city.bestfitsportsdata.com:25571/api/plays`, {
+    fetch(`http://localhost:25571/api/plays`, {
         method: 'DELETE'
     })
     .then(response => {
