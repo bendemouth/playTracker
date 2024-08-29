@@ -147,10 +147,6 @@ app.get('/callback', (req, res) => {
     });
 });
 
-
-
-
-
 // Function to refresh access token
 async function refreshAccessToken(refreshToken, req) {
   const refreshTokenRequest = {
