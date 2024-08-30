@@ -110,7 +110,7 @@ function addPlay() {
     console.log(playData); // Debugging
 
     // Add play to database (IMPORTANT)
-    fetch('http://pell-city.bestfitsportsdata.com:25571/api/plays', {
+    fetch('https://pell-city.bestfitsportsdata.com/api/plays', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
