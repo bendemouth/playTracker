@@ -3,7 +3,7 @@ let data = [];
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         // Fetch data from API
-        const response = await fetch("http://localhost:25571/api/plays");
+        const response = await fetch("https://pell-city.bestfitsportsdata.com/api/plays");
         
         // Check HTTP response
         if (!response.ok) {

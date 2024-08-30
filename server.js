@@ -37,7 +37,7 @@ const msalConfig = {
     clientId: config.AZURE_CLIENT_ID,
     authority: `https://login.microsoftonline.com/${config.AZURE_TENANT_ID}`,
     clientSecret: config.AZURE_CLIENT_SECRET,
-    redirectUri: 'https://pellcity.bestfitsportsdata.com/callback',  // Replace with your redirect URI
+    redirectUri: 'https://pell-city.bestfitsportsdata.com/callback',  // Replace with your redirect URI
   },
   cache: {
     cacheLocation: "sessionStorage",  // or "localStorage"
@@ -124,7 +124,7 @@ https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
 app.get('/msalLogin', (req, res) => {
   const authCodeUrlParameters = {
     scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-    redirectUri: "https://pellcity.bestfitsportsdata.com/callback",  // Replace with your redirect URI
+    redirectUri: "https://pell-city.bestfitsportsdata.com/callback",  // Replace with your redirect URI
   };
 
   cca.getAuthCodeUrl(authCodeUrlParameters)
@@ -137,7 +137,7 @@ app.get('/callback', (req, res) => {
   const tokenRequest = {
     code: req.query.code,
     scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-    redirectUri: "https://pellcity.bestfitsportsdata.com/callback",
+    redirectUri: "https://pell-city.bestfitsportsdata.com/callback",
   };
 
   cca.acquireTokenByCode(tokenRequest)
@@ -293,7 +293,7 @@ app.post('/api/login', async (req, res) => {
       // User exists, proceed with OAuth flow
       const authCodeUrlParameters = {
         scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-        redirectUri: "https://pellcity.bestfitsportsdata.com/callback",  // Ensure this matches your Azure AD registration
+        redirectUri: "https://pell-city.bestfitsportsdata.com/callback",  // Ensure this matches your Azure AD registration
       };
 
       // Redirect the user to the Microsoft login page
