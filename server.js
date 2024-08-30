@@ -5,23 +5,30 @@ const msal = require('@azure/msal-node');
 const cors = require('cors');
 const path = require('path');
 const config = require('./config/config');
+const https = require('https');
+const fs = require('fs');
 
 const app = express();
-const port = config.PORT || 25571;
+const port = 25662; //443 HTTPS or 25662 node.js dedicated port
 
-// Serve files from the 'public' folder
+// Serve files from 'public' folder
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors({ origin: 'http://pell-city.bestfitsportsdata.com' })); // Enable CORS for domain
 
-// Enable CORS for your domain
-app.use(cors({ origin: 'http://pell-city.bestfitsportsdata.com' }));
+// Set up SSL
+const sslOptions = {
+  key: fs.readFileSync(path.join(__dirname, 'ssl', 'pell-city.bestfitsportsdata.com.key')),
+  cert: fs.readFileSync(path.join(__dirname, 'ssl', 'pell-city.bestfitsportsdata.com.cert')),
+  ca: fs.readFileSync(path.join(__dirname, 'ssl', 'pell-city.bestfitsportsdata.com.ca')),
+};
 
 // Configure session for storing tokens
 app.use(session({
   secret: config.SESSION_SECRET|| 'o(VqTG.n^2^Cz>j-G/j-i9:kAD0[6}',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false }  // Leave false for http protocol
+  cookie: { secure: true }  // Change false if on http
 }));
 
 // MSAL configuration for Authorization Code Flow with PKCE
@@ -30,7 +37,7 @@ const msalConfig = {
     clientId: config.AZURE_CLIENT_ID,
     authority: `https://login.microsoftonline.com/${config.AZURE_TENANT_ID}`,
     clientSecret: config.AZURE_CLIENT_SECRET,
-    redirectUri: 'http://localhost:25571/callback',  // Replace with your redirect URI
+    redirectUri: 'https://pellcity.bestfitsportsdata.com/callback',  // Replace with your redirect URI
   },
   cache: {
     cacheLocation: "sessionStorage",  // or "localStorage"
@@ -45,8 +52,8 @@ async function connectToDatabaseWithServicePrincipal() {
     const token = await getServicePrincipalToken();
 
     const dbConfig = {
-      server: 'your-sql-server.database.windows.net', // Replace with your SQL server name
-      database: 'your-database-name',                // Replace with your database name
+      server: config.DB_SERVER,
+      database: config.DB_DATABASE,                
       authentication: {
         type: 'azure-active-directory-access-token',
         options: { token: token }
@@ -65,9 +72,6 @@ async function connectToDatabaseWithServicePrincipal() {
     console.error('Database connection failed:', err);
   }
 }
-
-connectToDatabaseWithServicePrincipal();
-
 
 
 async function getServicePrincipalToken() {
@@ -102,8 +106,9 @@ app.use(async (req, res, next) => {
 
 
 // Start the server with a service principal token
-app.listen(port, '0.0.0.0', async () => {
-  console.log(`Server running on port ${port}`);
+// Start the HTTPS server
+https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
+  console.log(`HTTPS Server running on port ${port}`);
 
   try {
     const servicePrincipalToken = await getServicePrincipalToken();
@@ -114,11 +119,12 @@ app.listen(port, '0.0.0.0', async () => {
   }
 });
 
+
 // OAuth2 Login Route - Redirect to Azure AD for login
-app.get('/login', (req, res) => {
+app.get('/msalLogin', (req, res) => {
   const authCodeUrlParameters = {
     scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-    redirectUri: "http://localhost:25571/callback",  // Replace with your redirect URI
+    redirectUri: "https://pellcity.bestfitsportsdata.com/callback",  // Replace with your redirect URI
   };
 
   cca.getAuthCodeUrl(authCodeUrlParameters)
@@ -131,7 +137,7 @@ app.get('/callback', (req, res) => {
   const tokenRequest = {
     code: req.query.code,
     scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-    redirectUri: "http://localhost:25571/callback",
+    redirectUri: "https://pellcity.bestfitsportsdata.com/callback",
   };
 
   cca.acquireTokenByCode(tokenRequest)
@@ -207,7 +213,7 @@ app.get('/connect', async (req, res) => {
     res.redirect('/homepage.html');  // Redirect to the main page after connection
   } catch (error) {
     if (error.code === 'ELOGIN') {
-      res.redirect('/login');  // Redirect to login if the token is expired or invalid
+      res.redirect('/msalLogin');  // Redirect to login if the token is expired or invalid
     } else {
       res.status(500).send('Database connection failed');
     }
@@ -287,7 +293,7 @@ app.post('/api/login', async (req, res) => {
       // User exists, proceed with OAuth flow
       const authCodeUrlParameters = {
         scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-        redirectUri: "http://localhost:25571/callback",  // Ensure this matches your Azure AD registration
+        redirectUri: "https://pellcity.bestfitsportsdata.com/callback",  // Ensure this matches your Azure AD registration
       };
 
       // Redirect the user to the Microsoft login page
