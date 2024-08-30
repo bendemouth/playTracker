@@ -26,36 +26,22 @@
             </div>
 
             <div class="col-6">
-                <form action="#" id="login-form">
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="username" placeholder="Enter Username" name="username">
-                        <label for="username">Username</label>
-                    </div>
+                <button class="btn btn-dark" id="loginButton">Login with Microsoft</button>
 
-                    <div class="form-floating mb-3">
-                        <input type="password" class="form-control" id="password" placeholder="Enter Password" name="password">
-                        <label for="password">Password</label>
-                    </div>
+                <hr>
 
-                    <button type="submit" class="btn btn-dark">Login</button>
-
-                    <hr>
-
-                    <p>Please contact bestfitsportsdata@gmail.com for troubles logging in.</p>
-                </form>
+                <p>Please contact bestfitsportsdata@gmail.com for troubles logging in.</p>
+                
             </div>
         </div>
-
-        <hr>
-
-        <button id="loginButton">Login with Microsoft</button>
+       
 
     </div>
     
     <script src="login.js"></script>
     <script>
         document.getElementById('loginButton').addEventListener('click', function() {
-            window.location.href = '/login';  // Redirect to the /login route
+            window.location.href = '/msalLogin';  // Redirect to the /login route
         });
     </script>
 </body>
