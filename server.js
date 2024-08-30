@@ -98,7 +98,7 @@ app.use(async (req, res, next) => {
       console.log('Token refreshed successfully.');
     } catch (error) {
       console.log('Failed to refresh token:', error);
-      return res.status(401).send("Session expired, please log in again.");
+      return res.redirect('/msalLogin');  // Redirect to login);
     }
   }
   next();
@@ -162,17 +162,30 @@ async function refreshAccessToken(refreshToken, req) {
 
   try {
     const response = await cca.acquireTokenByRefreshToken(refreshTokenRequest);
-    req.session.accessToken = response.accessToken;
-    req.session.refreshToken = response.refreshToken;
-    req.session.tokenExpiry = new Date(response.expiresOn).getTime();
-    console.log("New Access Token:", response.accessToken);
-    console.log("New Refresh Token:", response.refreshToken);
-    console.log("New Token Expiry:", new Date(response.expiresOn).getTime());
+    
+    if (response && response.accessToken) {
+      req.session.accessToken = response.accessToken;
+      req.session.refreshToken = response.refreshToken || refreshToken;  // Keep old refresh token if no new one is provided
+      req.session.tokenExpiry = new Date(response.expiresOn).getTime();
+    } else {
+      console.error("No access token in response");
+      throw new Error("Failed to refresh access token");
+    }
   } catch (error) {
     console.error("Failed to refresh token:", error);
-    throw error;
+    if (error.errorCode === 'invalid_grant' || error.errorCode === 'interaction_required') {
+      // Clear the session and redirect to login
+      req.session.destroy(() => {
+        console.log("Session destroyed due to token refresh failure");
+        res.redirect('/msalLogin');  // Redirect to login
+      });
+    } else {
+      throw error;  // Re-throw for further handling
+    }
   }
 }
+
+
 
 // Function to connect to the database
 async function connectToDatabase(token) {
