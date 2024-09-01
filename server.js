@@ -37,13 +37,25 @@ const msalConfig = {
     clientId: config.AZURE_CLIENT_ID,
     authority: `https://login.microsoftonline.com/${config.AZURE_TENANT_ID}`,
     clientSecret: config.AZURE_CLIENT_SECRET,
-    redirectUri: 'https://pell-city.bestfitsportsdata.com/callback',  // Replace with your redirect URI
+    redirectUri: 'https://pell-city.bestfitsportsdata.com/callback',  
+  },
+  system: {
+    loggerOptions: {
+      loggerCallback(logLevel, message, containsPii) {
+        if (logLevel === msal.LogLevel.Error || logLevel === msal.LogLevel.Warning) {
+          console.log(message);  // Only log errors and warnings
+        }
+      },
+      piiLoggingEnabled: false,  
+      logLevel: msal.LogLevel.Warning  // Set log level to Warning to reduce log output
+    }
   },
   cache: {
-    cacheLocation: "sessionStorage",  // or "localStorage"
-    storeAuthStateInCookie: true
+    cacheLocation: "sessionStorage",  
+    storeAuthStateInCookie: true  
   }
 };
+
 
 const cca = new msal.ConfidentialClientApplication(msalConfig);
 
@@ -76,7 +88,7 @@ async function connectToDatabaseWithServicePrincipal() {
 
 async function getServicePrincipalToken() {
   const tokenRequest = {
-    scopes: ["https://database.windows.net/.default"],  // Scope for Azure SQL Database
+    scopes: ["https://database.windows.net/.default"],  
   };
 
   try {
@@ -104,8 +116,6 @@ app.use(async (req, res, next) => {
   next();
 });
 
-
-// Start the server with a service principal token
 // Start the HTTPS server
 https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
   console.log(`HTTPS Server running on port ${port}`);
@@ -124,7 +134,8 @@ https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
 app.get('/msalLogin', (req, res) => {
   const authCodeUrlParameters = {
     scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-    redirectUri: "https://pell-city.bestfitsportsdata.com/callback",  // Replace with your redirect URI
+    redirectUri: "https://pell-city.bestfitsportsdata.com/callback",
+    prompt: "consent"
   };
 
   cca.getAuthCodeUrl(authCodeUrlParameters)
@@ -142,10 +153,14 @@ app.get('/callback', (req, res) => {
 
   cca.acquireTokenByCode(tokenRequest)
     .then((response) => {
+      console.log("Response: ",JSON.stringify(response, null, 2));
       req.session.accessToken = response.accessToken;
-      req.session.refreshToken = response.refreshToken; // If applicable
+      req.session.refreshToken = response.refreshToken || 'No token received'; //Add debugging to check for undefined token object
       req.session.tokenExpiry = new Date(response.expiresOn).getTime();
-      res.redirect('/homepage.html');  // Redirect to the secure area of your app
+      res.redirect('/homepage.html');  // Redirect to app homepage
+      //Log access and refresh tokens
+      console.log("Access token: ", response.accessToken);
+      console.log("Refresh token: ", response.refreshToken);
     })
     .catch((error) => {
       console.log(JSON.stringify(error));
@@ -167,6 +182,7 @@ async function refreshAccessToken(refreshToken, req) {
       req.session.accessToken = response.accessToken;
       req.session.refreshToken = response.refreshToken || refreshToken;  // Keep old refresh token if no new one is provided
       req.session.tokenExpiry = new Date(response.expiresOn).getTime();
+      console.log("Access token: ", response.accessToken);      
     } else {
       console.error("No access token in response");
       throw new Error("Failed to refresh access token");
@@ -180,7 +196,7 @@ async function refreshAccessToken(refreshToken, req) {
         res.redirect('/msalLogin');  // Redirect to login
       });
     } else {
-      throw error;  // Re-throw for further handling
+      throw error;  //Throw error if needed
     }
   }
 }
@@ -197,7 +213,7 @@ async function connectToDatabase(token) {
         type: 'azure-active-directory-access-token',
         options: { token: token || config.DEFAULT_DB_TOKEN }  // Use a default token if no token is provided
       },
-      options: { encrypt: true }  // Required for Azure SQL
+      options: { encrypt: true }  // Required true for Azure SQL
     };
 
     const pool = await sql.connect(dbConfig);
@@ -217,21 +233,36 @@ async function connectToDatabase(token) {
 
 // Add API route to connect to the database
 app.get('/connect', async (req, res) => {
+  // Check if the session and access token are available
   if (!req.session || !req.session.accessToken) {
-    return res.status(401).send('User not authenticated');
+    return res.status(401).send('User not authenticated. Please login.');
+  }
+
+  // Optional: Log the refresh token for debugging
+  if (req.session.refreshToken) {
+    console.log('Current Refresh Token:', req.session.refreshToken);
+  } else {
+    console.log('No refresh token found in the session.');
   }
 
   try {
-    await connectToDatabase(req);  // Use the valid access token
-    res.redirect('/homepage.html');  // Redirect to the main page after connection
+    // Attempt to connect to the database using the current access token
+    await connectToDatabase(req.session.accessToken);
+    res.redirect('/homepage.html');
   } catch (error) {
-    if (error.code === 'ELOGIN') {
-      res.redirect('/msalLogin');  // Redirect to login if the token is expired or invalid
+    if (error.code === 'ELOGIN' || error.errorCode === 'invalid_grant') {
+      // Handle expired or invalid tokens by redirecting to the login page
+      console.log('Access token invalid or expired, redirecting to login...');
+      res.redirect('/msalLogin');
     } else {
+      // Handle other database connection errors
+      console.error('Database connection failed:', error);
       res.status(500).send('Database connection failed');
     }
   }
 });
+
+
 
 
 // Add API route to POST plays to the database
@@ -306,7 +337,8 @@ app.post('/api/login', async (req, res) => {
       // User exists, proceed with OAuth flow
       const authCodeUrlParameters = {
         scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-        redirectUri: "https://pell-city.bestfitsportsdata.com/callback",  // Ensure this matches your Azure AD registration
+        redirectUri: "https://pell-city.bestfitsportsdata.com/callback",
+        prompt: "consent"
       };
 
       // Redirect the user to the Microsoft login page
