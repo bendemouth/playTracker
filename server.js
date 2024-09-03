@@ -47,7 +47,7 @@ const msalConfig = {
         }
       },
       piiLoggingEnabled: false,  
-      logLevel: msal.LogLevel.Warning  // Set log level to Warning to reduce log output
+      logLevel: msal.LogLevel.Warning  // Set log level to Warning to reduce log output. Change to verbose to see all
     }
   },
   cache: {
@@ -70,7 +70,10 @@ async function connectToDatabaseWithServicePrincipal() {
         type: 'azure-active-directory-access-token',
         options: { token: token }
       },
-      options: { encrypt: true }
+      options: { 
+        encrypt: true,
+        keepAlive: true
+      }
     };
 
     const pool = await sql.connect(dbConfig);
@@ -202,7 +205,6 @@ async function refreshAccessToken(refreshToken, req) {
 }
 
 
-
 // Function to connect to the database
 async function connectToDatabase(token) {
   try {
@@ -213,7 +215,9 @@ async function connectToDatabase(token) {
         type: 'azure-active-directory-access-token',
         options: { token: token || config.DEFAULT_DB_TOKEN }  // Use a default token if no token is provided
       },
-      options: { encrypt: true }  // Required true for Azure SQL
+      options: { encrypt: true,
+                 keepAlive: true
+       }  // Required true for Azure SQL
     };
 
     const pool = await sql.connect(dbConfig);
@@ -228,7 +232,6 @@ async function connectToDatabase(token) {
     console.error('Full error details:', err);
   }
 }
-
 
 
 // Add API route to connect to the database
@@ -261,8 +264,6 @@ app.get('/connect', async (req, res) => {
     }
   }
 });
-
-
 
 
 // Add API route to POST plays to the database
