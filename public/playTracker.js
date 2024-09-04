@@ -404,7 +404,9 @@ function pointsPerPlayer() {
         tristanAnderson: [],
         elliotHuckaby: [],
         khaliThompson: [],
-        jordanWoods: []
+        jordanWoods: [],
+        jjHamby: [],
+        evanBlack: []
     };
 
 
@@ -470,6 +472,14 @@ function pointsPerPlayer() {
 
         if(playTracker['players'][i].includes('jordan-woods')) {
             playerAverages['jordanWoods'].push(playResult);
+        }
+
+        if(playTracker['players'][i].includes('jj-hamby')) {
+            playerAverages['jjHamby'].push(playResult);
+        }
+
+        if(playTracker['players'][i].includes('evan-black')) {
+            playerAverages['evanBlack'].push(playResult);
         }
     }
 
@@ -560,6 +570,16 @@ function displayAveragesByPlayer() {
             <tr>
                 <td>Jordan Woods</td>
                 <td>${playerAverages['jordanWoods']}</td>
+            </tr>
+
+            <tr>
+                <td>JJ Hamby</td>
+                <td>${playerAverages['jjHamby']}</td>
+            </tr>
+
+            <tr>
+                <td>Evan Black</td>
+                <td>${playerAverages['evanBlack']}</td>
             </tr>
         </tbody>
     </table>
