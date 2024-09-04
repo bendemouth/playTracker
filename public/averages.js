@@ -116,11 +116,13 @@ function displayAveragesByPlayType() {
     document.getElementById('display').innerHTML = `
     <div class="container mt-5">
     <h3>Half-Court Averages</h3>
-    <table class="table table-striped">
-        <tr>
-            <th>Action</th>
-            <th>Average Points</th>
-        </tr>
+    <table id="halfCourtTable" class="table table-striped">
+        <thead>
+            <tr>
+                <th role="columnheader">Action</th>
+                <th role="columnheader">Average Points</th>
+            </tr>
+        </thead>
         <tbody>
             <tr class='table-warning'>
                 <td>Horns</td>
@@ -138,11 +140,13 @@ function displayAveragesByPlayType() {
     </table>
 
     <h3>Fast Break Averages</h3>
-    <table class="table table-striped">
-        <tr>
-            <th>Action</th>
-            <th>Average Points</th>
-        </tr>
+    <table id="fastBreakTable" class="table table-striped">
+        <thead>
+            <tr>
+                <th role="columnheader">Action</th>
+                <th role="columnheader">Average Points</th>
+            </tr>
+        </thead>
         <tbody>
             <tr class='table-info'>
                 <td>Drag</td>
@@ -160,6 +164,10 @@ function displayAveragesByPlayType() {
     </table>
     </div>
     `;
+
+    // Initialize Tablesort
+    new Tablesort(document.getElementById('halfCourtTable'));
+    new Tablesort(document.getElementById('fastBreakTable'));
 }
 
 
@@ -320,84 +328,32 @@ function getAveragesByPlayer() {
 }
 
 function displayAveragesByPlayer() {
-
     const playerAverages = getAveragesByPlayer();
-
-
 
     document.getElementById('display').innerHTML = `
     <div class="container mt-5">
     <h3>Average Points per Player</h3>
-    <table class="table table-striped">
-        <tr>
-            <th>Player</th>
-            <th>Average Points</th>
-        </tr>
+    <table id="playerTable" class="table table-striped">
+        <thead>
+            <tr>
+                <th role="columnheader">Player</th>
+                <th role="columnheader">Average Points</th>
+            </tr>
+        </thead>
         <tbody>
-            <tr>
-                <td>Logan Preuss</td>
-                <td>${playerAverages['loganPreuss']}</td>
-            </tr>
-            <tr>
-                <td>Sawyer Ginn</td>
-                <td>${playerAverages['sawyerGinn']}</td>
-            </tr>
-            <tr>
-                <td>DJ Verges</td>
-                <td>${playerAverages['djVerges']}</td>
-            </tr>
-            <tr>
-                <td>Trey Kuz</td>
-                <td>${playerAverages['treyKuz']}</td>
-            </tr>
-            <tr>
-                <td>Ethan Isbell</td>
-                <td>${playerAverages['ethanIsbell']}</td>
-            </tr>
-            <tr>
-                <td>Tyler Kuz</td>
-                <td>${playerAverages['tylerKuz']}</td>
-            </tr>
-            <tr>
-                <td>TJ Sanders</td>
-                <td>${playerAverages['tjSanders']}</td>
-            </tr>
-            <tr>
-                <td>Hagan Calvin</td>
-                <td>${playerAverages['haganCalvin']}</td>
-            </tr>
-            <tr>
-                <td>Brody Gossett</td>
-                <td>${playerAverages['brodyGossett']}</td>
-            </tr>
-            <tr>
-                <td>Jemarc Clegg</td>
-                <td>${playerAverages['jemarcClegg']}</td>
-            </tr>
-            <tr>
-                <td>Connor Chandler</td>
-                <td>${playerAverages['connorChandler']}</td>
-            </tr>
-            <tr>
-                <td>Tristan Anderson</td>
-                <td>${playerAverages['tristanAnderson']}</td>
-            </tr>
-            <tr>
-                <td>Elliot Huckaby</td>
-                <td>${playerAverages['elliotHuckaby']}</td>
-            </tr>
-            <tr>
-                <td>Khali Thompson</td>
-                <td>${playerAverages['khaliThompson']}</td>
-            </tr>
-            <tr>
-                <td>Jordan Woods</td>
-                <td>${playerAverages['jordanWoods']}</td>
-            </tr>
+            ${Object.entries(playerAverages).map(([player, average]) => `
+                <tr>
+                    <td>${player.replace(/([A-Z])/g, ' $1').trim().replace(/\b\w/g, c => c.toUpperCase())}</td>
+                    <td>${average}</td>
+                </tr>
+            `).join('')}
         </tbody>
     </table>
     </div>
     `;
+
+    // Initialize Tablesort
+    new Tablesort(document.getElementById('playerTable'));
 }
 
 function getAveragesBySituation() {
@@ -437,18 +393,18 @@ function getAveragesBySituation() {
 }
 
 function displayAveragesBySituation(){
-
     const situationAverages = getAveragesBySituation();
-
 
     document.getElementById('display').innerHTML = `
     <div class="container mt-5">
     <h3>Averages by Situation</h3>
-    <table class="table table-striped">
-        <tr>
-            <th>Situation</th>
-            <th>Average Points</th>
-        </tr>
+    <table id="situationTable" class="table table-striped">
+        <thead>
+            <tr>
+                <th role="columnheader">Situation</th>
+                <th role="columnheader">Average Points</th>
+            </tr>
+        </thead>
         <tbody>
             <tr>
                 <td>Half-Court</td>
@@ -462,4 +418,10 @@ function displayAveragesBySituation(){
     </table>
     </div>
     `;
+
+    // Initialize Tablesort
+    new Tablesort(document.getElementById('situationTable'));
 }
+
+
+    
