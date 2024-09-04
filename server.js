@@ -281,8 +281,8 @@ app.post('/api/plays', async (req, res) => {
 
     const query = `
       INSERT INTO PellCityBoys2425 
-      ([play-number], [play-situation], [players-involved], [play-action], [play-result])
-      VALUES (@playNumber, @playSituation, @playersInvolved, @playAction, @playResult)
+      ([play-number], [play-situation], [players-involved], [play-action], [play-result], [opponent])
+      VALUES (@playNumber, @playSituation, @playersInvolved, @playAction, @playResult, @opponent)
     `;
 
     await pool.request()
