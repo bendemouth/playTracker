@@ -291,6 +291,7 @@ app.post('/api/plays', async (req, res) => {
       .input('playersInvolved', sql.NVarChar, JSON.stringify(req.body.players))  // Convert array to JSON string
       .input('playAction', sql.NVarChar, req.body.playAction)
       .input('playResult', sql.NVarChar, req.body.playResult)
+      .input('opponent', sql.NVarChar, req.body.opponent)
       .query(query);
 
     res.status(200).json({ message: 'Play added successfully!' });
