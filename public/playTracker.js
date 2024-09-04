@@ -333,11 +333,13 @@ function displayAveragesByPlay() {
     document.getElementById('display').innerHTML = `
     <div class="container mt-5">
     <h3>Half-Court Points per Action</h3>
-    <table class="table table-striped">
-        <tr>
-            <th>Action</th>
-            <th>Points per Acction</th>
-        </tr>
+    <table id="halfCourtTable" class="table table-striped">
+        <thead>
+            <tr>
+                <th role="columnheader">Action</th>
+                <th role="columnheader">Points per Action</th>
+            </tr>
+        </thead>
         <tbody>
             <tr class='table-warning'>
                 <td>Horns</td>
@@ -348,18 +350,20 @@ function displayAveragesByPlay() {
                 <td>${actionAverages['pick-roll']}</td>
             </tr>
             <tr class='table-success'>
-                    <td>Point</td>
-                    <td>${actionAverages['point']}</td>
+                <td>Point</td>
+                <td>${actionAverages['point']}</td>
             </tr>
         </tbody>
     </table>
 
     <h3>Fast Break Points per Action</h3>
-    <table class="table table-striped">
-        <tr>
-            <th>Action</th>
-            <th>Points per Action</th>
-        </tr>
+    <table id="fastBreakTable" class="table table-striped">
+        <thead>
+            <tr>
+                <th role="columnheader">Action</th>
+                <th role="columnheader">Points per Action</th>
+            </tr>
+        </thead>
         <tbody>
             <tr class='table-info'>
                 <td>Drag</td>
@@ -376,10 +380,11 @@ function displayAveragesByPlay() {
         </tbody>
     </table>
     </div>
-
-
-    
     `;
+
+    // Initialize Tablesort
+    new Tablesort(document.getElementById('halfCourtTable'));
+    new Tablesort(document.getElementById('fastBreakTable'));
 }
 
 // Get average points per player
@@ -483,17 +488,18 @@ function pointsPerPlayer() {
 
 // Display the average points per player
 function displayAveragesByPlayer() {
-
     const playerAverages = pointsPerPlayer();
 
     document.getElementById('display').innerHTML = `
     <div class="container mt-5">
     <h3>Average Points per Player</h3>
-    <table class="table table-striped">
-        <tr>
-            <th>Player</th>
-            <th>Average Points</th>
-        </tr>
+    <table id="playerTable" class="table table-striped">
+        <thead>
+            <tr>
+                <th role="columnheader">Player</th>
+                <th role="columnheader">Average Points</th>
+            </tr>
+        </thead>
         <tbody>
             <tr>
                 <td>Logan Preuss</td>
@@ -559,4 +565,7 @@ function displayAveragesByPlayer() {
     </table>
     </div>
     `;
+
+    // Initialize Tablesort
+    new Tablesort(document.getElementById('playerTable'));
 }
