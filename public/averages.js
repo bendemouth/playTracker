@@ -187,7 +187,9 @@ function getAveragesByPlayer() {
         'tristanAnderson': [],
         'elliotHuckaby': [],
         'khaliThompson': [],
-        'jordanWoods': []
+        'jordanWoods': [],
+        'jjHamby': [],
+        'evanBlack': []
     };
 
     for (let i = 0; i < data.length; i++) {
@@ -311,6 +313,23 @@ function getAveragesByPlayer() {
                 playerAverages['jordanWoods'].push(0);
             }
         }
+
+        if (data[i]['players-involved'].includes('jj-hamby')) {
+            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
+                playerAverages['jjHamby'].push(parseInt(data[i]['play-result']));
+            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
+                playerAverages['jjHamby'].push(0);
+            }
+        }
+
+        if (data[i]['players-involved'].includes('evan-black')) {
+            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
+                playerAverages['evanBlack'].push(parseInt(data[i]['play-result']));
+            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
+                playerAverages['evanBlack'].push(0);
+            }
+        }
+        
     }
 
 
