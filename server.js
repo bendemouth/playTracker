@@ -109,7 +109,7 @@ app.use(async (req, res, next) => {
   if (req.session.tokenExpiry && Date.now() >= req.session.tokenExpiry) {
     console.log('Token expired, attempting to refresh...');
     try {
-      await refreshAccessToken(req.session.refreshToken, req);
+      await refreshAccessToken(req.session.refreshToken, req, res);
       console.log('Token refreshed successfully.');
     } catch (error) {
       console.log('Failed to refresh token:', error);
@@ -172,7 +172,7 @@ app.get('/callback', (req, res) => {
 });
 
 // Function to refresh access token
-async function refreshAccessToken(refreshToken, req) {
+async function refreshAccessToken(refreshToken, req, res) {
   const refreshTokenRequest = {
     refreshToken: refreshToken,
     scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
@@ -181,28 +181,32 @@ async function refreshAccessToken(refreshToken, req) {
   try {
     const response = await cca.acquireTokenByRefreshToken(refreshTokenRequest);
     
-    if (response && response.accessToken) {
-      req.session.accessToken = response.accessToken;
-      req.session.refreshToken = response.refreshToken || refreshToken;  // Keep old refresh token if no new one is provided
-      req.session.tokenExpiry = new Date(response.expiresOn).getTime();
-      console.log("Access token: ", response.accessToken);      
-    } else {
-      console.error("No access token in response");
-      throw new Error("Failed to refresh access token");
+    if(!response || !response.accessToken) {
+      console.error("No access token received");
+      throw new Error("No access token received");
     }
+
+    req.session.accessToken = response.accessToken;
+    req.session.refreshToken = response.refreshToken || 'No refresh token received'; //Add debugging to check for undefined token object
+    req.session.tokenExpiry = new Date(response.expiresOn).getTime();
+    console.log("Access token refreshed successfully");
   } catch (error) {
     console.error("Failed to refresh token:", error);
     if (error.errorCode === 'invalid_grant' || error.errorCode === 'interaction_required') {
       // Clear the session and redirect to login
-      req.session.destroy(() => {
-        console.log("Session destroyed due to token refresh failure");
-        res.redirect('/msalLogin');  // Redirect to login
+      req.session.destroy(function (err) {
+        if (err) {
+          console.error("Session destruction error:", err);
+        } else {
+          console.log("Session destroyed due to token refresh failure");
+          res.redirect('/msalLogin');
+        }
       });
     } else {
       throw error;  //Throw error if needed
     }
   }
-}
+};
 
 
 // Function to connect to the database
