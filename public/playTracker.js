@@ -4,6 +4,7 @@ let playTracker = {
     'players': [],
     'playAction': [],
     'playResult': [],
+    'opponent': []
 };
 
 let playNumber = 0;
@@ -67,6 +68,8 @@ function addPlay() {
 
     let situation = document.getElementById('situation-select').value;
 
+    let opponent = document.getElementById('opponent-select').value;
+
     console.log(action, playOutcome, situation); // Debugging
     
     if (action === 'default' || playOutcome === 'default' || situation === 'default') {
@@ -99,12 +102,15 @@ function addPlay() {
 
     playTracker['playResult'].push(playOutcome);
 
+    playTracker['opponent'].push(opponent);
+
     const playData = {
         playNumber: playNumber,
         playSituation: situation,
         players: selectedPlayers,
         playAction: action,
-        playResult: playOutcome
+        playResult: playOutcome,
+        opponent: opponent
     };
 
     console.log(playData); // Debugging
@@ -175,6 +181,7 @@ function removePlay() {
         playTracker['players'].pop();
         playTracker['playAction'].pop();
         playTracker['playResult'].pop();
+        playTracker['opponent'].pop();
 
         document.getElementById('display').innerHTML = `
         <div class="container mt-5">
@@ -207,7 +214,7 @@ function viewPlays() {
     const playersInvolved = playTracker['players'];
     const actionsUsed = playTracker['playAction'];
     const playResult = playTracker['playResult'];
-
+    const opponents = playTracker['opponent'];
     for (let i=0; i < playNumbers.length; i++) {
         trackerDisplay += `
         <tr>
@@ -216,6 +223,7 @@ function viewPlays() {
             <td>${playersInvolved[i].join(', ')}</td>
             <td>${actionsUsed[i]}</td>
             <td>${playResult[i]}</td>
+            <td>${opponents[i]}</td>
         </tr>
 
         `;

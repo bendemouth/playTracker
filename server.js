@@ -281,8 +281,8 @@ app.post('/api/plays', async (req, res) => {
 
     const query = `
       INSERT INTO PellCityBoys2425 
-      ([play-number], [play-situation], [players-involved], [play-action], [play-result])
-      VALUES (@playNumber, @playSituation, @playersInvolved, @playAction, @playResult)
+      ([play-number], [play-situation], [players-involved], [play-action], [play-result], [opponent])
+      VALUES (@playNumber, @playSituation, @playersInvolved, @playAction, @playResult, @opponent)
     `;
 
     await pool.request()
@@ -291,6 +291,7 @@ app.post('/api/plays', async (req, res) => {
       .input('playersInvolved', sql.NVarChar, JSON.stringify(req.body.players))  // Convert array to JSON string
       .input('playAction', sql.NVarChar, req.body.playAction)
       .input('playResult', sql.NVarChar, req.body.playResult)
+      .input('opponent', sql.NVarChar, req.body.opponent)
       .query(query);
 
     res.status(200).json({ message: 'Play added successfully!' });
