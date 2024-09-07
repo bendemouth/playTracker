@@ -124,8 +124,7 @@ https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
   console.log(`HTTPS Server running on port ${port}`);
 
   try {
-    const servicePrincipalToken = await getServicePrincipalToken();
-    await connectToDatabase(servicePrincipalToken);  // Use the service principal token
+    await connectToDatabaseWithServicePrincipal();
     console.log('Connected to the database');
   } catch (error) {
     console.error('Failed to connect to the database:', error);
@@ -213,7 +212,7 @@ async function connectToDatabase(token) {
       database: config.DB_DATABASE,
       authentication: {
         type: 'azure-active-directory-access-token',
-        options: { token: token || config.DEFAULT_DB_TOKEN }  // Use a default token if no token is provided
+        options: { token: token }  // Use config.DEFAULT_DB_TOKEN if token if no token is provided
       },
       options: { encrypt: true,
                  keepAlive: true
