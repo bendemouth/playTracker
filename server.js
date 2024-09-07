@@ -281,8 +281,8 @@ app.post('/api/plays', async (req, res) => {
 
     const query = `
       INSERT INTO PellCityBoys2425 
-      ([play-number], [play-situation], [players-involved], [play-action], [play-result], [opponent])
-      VALUES (@playNumber, @playSituation, @playersInvolved, @playAction, @playResult, @opponent)
+      ([play-number], [play-situation], [players-involved], [play-action], [play-result])
+      VALUES (@playNumber, @playSituation, @playersInvolved, @playAction, @playResult)
     `;
 
     await pool.request()
@@ -291,7 +291,6 @@ app.post('/api/plays', async (req, res) => {
       .input('playersInvolved', sql.NVarChar, JSON.stringify(req.body.players))  // Convert array to JSON string
       .input('playAction', sql.NVarChar, req.body.playAction)
       .input('playResult', sql.NVarChar, req.body.playResult)
-      .input('opponent', sql.NVarChar, req.body.opponent)
       .query(query);
 
     res.status(200).json({ message: 'Play added successfully!' });
@@ -391,4 +390,15 @@ app.delete('/api/plays', async (req, res) => {
     console.error('Error deleting the most recent play:', error);
     res.status(500).json({ error: 'Failed to delete the most recent play' });
   }
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.log('Error destroying session:', err);
+      return res.status(500).send('Failed to log out.');
+    }
+    sql.close();  // Close the database connection pool
+    res.redirect('/login.html');
+  });
 });
