@@ -14,7 +14,7 @@ const port = 25662; //443 HTTPS or 25662 node.js dedicated port
 // Serve files from 'public' folder
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors({ origin: 'http://pell-city.bestfitsportsdata.com' })); // Enable CORS for domain
+app.use(cors({ origin: 'https://pell-city.bestfitsportsdata.com' })); // Enable CORS for domain
 
 // Set up SSL
 const sslOptions = {
@@ -371,6 +371,6 @@ app.get('/logout', (req, res) => {
       return res.status(500).send('Failed to log out.');
     }
     sql.close();  // Close the database connection pool
-    res.redirect('/login.html');
+    res.redirect('/index.html');
   });
 });
