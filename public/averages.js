@@ -3,9 +3,14 @@ let data = [];
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         // Fetch data from API
-        const response = await fetch("https://pell-city.bestfitsportsdata.com/api/plays");
+        const response = await fetch("/api/plays");
         
         // Check HTTP response
+        if (response.status === 401) {
+            window.location.href = "/msalLogin";
+            return;
+        }
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
