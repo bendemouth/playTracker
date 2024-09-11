@@ -49,10 +49,6 @@ const msalConfig = {
       piiLoggingEnabled: false,  
       logLevel: msal.LogLevel.Warning  // Set log level to Warning to reduce log output. Change to verbose to see all
     }
-  },
-  cache: {
-    cacheLocation: "sessionStorage",  
-    storeAuthStateInCookie: true  
   }
 };
 
@@ -106,14 +102,16 @@ async function getServicePrincipalToken() {
 
 // Middleware to check token expiration and refresh if necessary
 app.use(async (req, res, next) => {
-  if (req.session.tokenExpiry && Date.now() >= req.session.tokenExpiry) {
-    console.log('Token expired, attempting to refresh...');
+  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before actual expiry
+
+  if (req.session.tokenExpiry && Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
+    console.log('Token nearing expiry, attempting to refresh...');
     try {
       await refreshAccessToken(req.session.refreshToken, req);
       console.log('Token refreshed successfully.');
     } catch (error) {
       console.log('Failed to refresh token:', error);
-      return res.redirect('/msalLogin');  // Redirect to login);
+      return res.redirect('/msalLogin');  // Redirect to login if refresh fails
     }
   }
   next();
@@ -205,30 +203,42 @@ async function refreshAccessToken(refreshToken, req) {
 
 
 // Function to connect to the database
-async function connectToDatabase(token) {
+async function connectToDatabase(req) {
+  // Check if there's a valid access token in the session
+  if (!req.session || !req.session.accessToken) {
+    throw new Error('No access token available. User needs to log in.');
+  }
+
+  // Check if the token is nearing expiration and refresh it if necessary
+  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before expiry
+  if (req.session.tokenExpiry && Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
+    console.log('Access token nearing expiry, attempting to refresh...');
+    await refreshAccessToken(req.session.refreshToken, req);
+  }
+
+  // Proceed with the database connection using the (refreshed) token
   try {
     const dbConfig = {
       server: config.DB_SERVER,
       database: config.DB_DATABASE,
       authentication: {
         type: 'azure-active-directory-access-token',
-        options: { token: token }  // Use config.DEFAULT_DB_TOKEN if token if no token is provided
+        options: { token: req.session.accessToken }
       },
-      options: { encrypt: true,
-                 keepAlive: true
-       }  // Required true for Azure SQL
+      options: {
+        encrypt: true,
+        keepAlive: true  // Keep connection alive
+      }
     };
 
     const pool = await sql.connect(dbConfig);
-    console.log('Connected to the Azure SQL Database with Azure AD');
-
-    // Test the connection with a simple query
-    const result = await pool.request().query('SELECT 1 AS number');
-    console.log('Query result:', result.recordset);
-
+    console.log('Connected to the Azure SQL Database.');
+    return pool;
   } catch (err) {
-    console.error('Database connection failed:', err.message);
-    console.error('Full error details:', err);
+    console.error('Database connection failed:', err);
+    throw err;
+
+    
   }
 }
 
@@ -268,16 +278,10 @@ app.get('/connect', async (req, res) => {
 // Add API route to POST plays to the database
 app.post('/api/plays', async (req, res) => {
   try {
-    const pool = await sql.connect({
-      server: config.DB_SERVER,
-      database: config.DB_DATABASE,
-      authentication: {
-        type: 'azure-active-directory-access-token',
-        options: { token: req.session.accessToken }
-      },
-      options: { encrypt: true }
-    });
+    // Use the centralized connectToDatabase function to handle token checks and connection setup
+    const pool = await connectToDatabase(req);
 
+    // Prepare and execute the query to insert play data
     const query = `
       INSERT INTO PellCityBoys2425 
       ([play-number], [play-situation], [players-involved], [play-action], [play-result])
@@ -294,86 +298,45 @@ app.post('/api/plays', async (req, res) => {
 
     res.status(200).json({ message: 'Play added successfully!' });
   } catch (err) {
-    console.error('Error inserting play:', err);
-    res.status(500).json({ message: 'Database insert failed.' });
+    if (err.message.includes('No access token available')) {
+      return res.status(401).json({ message: 'User not authenticated. Please login.' });
+    } else if (err.code === 'ELOGIN') {
+      console.log('Access token invalid or expired, redirecting to login...');
+      return res.status(401).json({ message: 'Access token invalid or expired, please login again.' });
+    } else {
+      console.error('Error inserting play:', err);
+      return res.status(500).json({ message: 'Database insert failed.' });
+    }
   }
 });
+
 
 // Add API route to GET play data from the database
 app.get('/api/plays', async (req, res) => {
   try {
-    const pool = await sql.connect({
-      server: config.DB_SERVER,
-      database: config.DB_DATABASE,
-      authentication: {
-        type: 'azure-active-directory-access-token',
-        options: { token: req.session.accessToken }
-      },
-      options: { encrypt: true }
-    });
+    const pool = await connectToDatabase(req);  // Use the updated connectToDatabase function
     const result = await pool.request().query('SELECT * FROM PellCityBoys2425');
-
     res.status(200).json(result.recordset);
   } catch (err) {
-    console.error('Error retrieving plays:', err);
-    res.status(500).json({ message: 'Database retrieval failed.' });
-  }
-});
-
-// Add API route to check user login information
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const pool = await sql.connect();
-
-    // Query the database for the provided username and password
-    const result = await pool.request()
-      .input('username', sql.NVarChar, username)
-      .input('password', sql.NVarChar, password)
-      .query('SELECT * FROM LoginInfo WHERE username = @username AND password = @password');
-
-    if (result.recordset.length > 0) {
-      // User exists, proceed with OAuth flow
-      const authCodeUrlParameters = {
-        scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],
-        redirectUri: "https://pell-city.bestfitsportsdata.com/callback",
-        prompt: "consent"
-      };
-
-      // Redirect the user to the Microsoft login page
-      cca.getAuthCodeUrl(authCodeUrlParameters)
-        .then((response) => {
-          res.redirect(response);
-        })
-        .catch((error) => {
-          console.log(JSON.stringify(error));
-          res.status(500).send("Error redirecting to Microsoft login");
-        });
-
+    if (err.message.includes('No access token available')) {
+      return res.redirect('/msalLogin');  // Redirect to login if no token is found
+    } else if (err.code === 'ELOGIN') {
+      console.log('Access token invalid or expired, redirecting to login...');
+      return res.redirect('/msalLogin');
     } else {
-      res.status(401).json({ success: false, message: 'Invalid username or password' });
+      console.error('Database retrieval failed:', err);
+      return res.status(500).send('Database retrieval failed');
     }
-  } catch (err) {
-    console.error('Error during login:', err);
-    res.status(500).json({ message: 'Database retrieval failed.' });
   }
 });
-
 
 // Add API route to delete the most recent play from the database
 app.delete('/api/plays', async (req, res) => {
   try {
-    const pool = await sql.connect({
-      server: config.DB_SERVER,
-      database: config.DB_DATABASE,
-      authentication: {
-        type: 'azure-active-directory-access-token',
-        options: { token: req.session.accessToken }
-      },
-      options: { encrypt: true }
-    });
+    // Use the centralized connectToDatabase function to handle token checks and connection setup
+    const pool = await connectToDatabase(req);
 
+    // Define the query to delete the most recent play
     const query = `
       DELETE FROM PellCityBoys2425
       WHERE [play-id] = (
@@ -383,13 +346,23 @@ app.delete('/api/plays', async (req, res) => {
       );
     `;
 
+    // Execute the query
     await pool.request().query(query);
+
     res.status(200).json({ message: 'Most recent play deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting the most recent play:', error);
-    res.status(500).json({ error: 'Failed to delete the most recent play' });
+  } catch (err) {
+    if (err.message.includes('No access token available')) {
+      return res.status(401).json({ message: 'User not authenticated. Please login.' });
+    } else if (err.code === 'ELOGIN') {
+      console.log('Access token invalid or expired, redirecting to login...');
+      return res.status(401).json({ message: 'Access token invalid or expired, please login again.' });
+    } else {
+      console.error('Error deleting the most recent play:', err);
+      return res.status(500).json({ message: 'Failed to delete the most recent play.' });
+    }
   }
 });
+
 
 app.get('/logout', (req, res) => {
   req.session.destroy((err) => {
