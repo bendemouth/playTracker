@@ -32,10 +32,10 @@ const sslOptions = {
 
 // Configure session for storing tokens
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: config.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: true } //Change false if not using HTTPS
+  cookie: { secure: true } //Set false if HTTP instead of HTTPS
 }));
 
 // MSAL configuration for Authorization Code Flow with PKCE
@@ -62,82 +62,6 @@ const msalConfig = {
 
 const cca = new msal.ConfidentialClientApplication(msalConfig);
 
-async function getToken(req) {
-  const tokenRequestBody = {
-    client_id: process.env.AZURE_CLIENT_ID,
-    scope: 'openid profile offline_access https://graph.microsoft.com/User.Read',
-    code: req.query.code,  // Authorization code from the request
-    redirect_uri: process.env.REDIRECT_URI,
-    grant_type: 'authorization_code',
-    client_secret: process.env.AZURE_CLIENT_SECRET
-  };
-
-  try {
-    const response = await axios.post(`https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/token`, new URLSearchParams(tokenRequestBody).toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    });
-
-    // Store the tokens (access_token, refresh_token)
-    req.session.accessToken = response.data.access_token;
-    req.session.refreshToken = response.data.refresh_token;
-    req.session.tokenExpiry = Date.now() + (response.data.expires_in * 1000);  // Calculate expiry time
-
-    console.log('Access Token:', response.data.access_token);
-    console.log('Refresh Token:', response.data.refresh_token);
-
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching token:', error.response.data);
-    throw error;
-  }
-}
-
-// Centralized DB connection function
-async function getDBConnection(req) {
-  if (!req.session.accessToken) throw new Error('No valid access token');
-  return sql.connect({
-    server: config.DB_SERVER,
-    database: config.DB_DATABASE,
-    authentication: { type: 'azure-active-directory-access-token', options: { token: req.session.accessToken } },
-    options: { encrypt: true, keepAlive: true }
-  });
-}
-
-
-
-async function getServicePrincipalToken() {
-  const tokenRequest = {
-    scopes: ["https://database.windows.net/.default"],  // SQL-specific scopes
-  };
-
-  try {
-    const response = await cca.acquireTokenByClientCredential(tokenRequest);
-    console.log("Access Token:", response.accessToken);
-    return response.accessToken;
-  } catch (error) {
-    console.error("Failed to acquire token:", error);
-    throw error;
-  }
-}
-
-// Middleware to check token expiration and refresh if necessary
-app.use(async (req, res, next) => {
-  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before actual expiry
-
-  if (req.session.tokenExpiry && Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
-    console.log('Token nearing expiry, attempting to refresh...');
-    try {
-      await refreshAccessToken(req.session.refreshToken, req);
-      console.log('Token refreshed successfully.');
-    } catch (error) {
-      console.log('Failed to refresh token:', error);
-      return res.redirect('/msalLogin');  // Redirect to login if refresh fails
-    }
-  }
-  next();
-});
 
 // Start the HTTPS server
 https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
@@ -152,52 +76,6 @@ https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
 });
 
 
-// OAuth2 Login Route - Redirect to Azure AD for login
-app.get('/msalLogin', (req, res) => {
-  // Logic check for SQL or Graph API access
-  const isSQLLogin = req.session.isSQLLogin;
-  const authCodeUrlParameters = {
-    scopes: isSQLLogin
-      ? ["https://database.windows.net/.default"]  // For Azure SQL Database access
-      : ["openid profile offline_access https://graph.microsoft.com/User.Read"],  // For Graph API access
-    redirectUri: "https://pell-city.bestfitsportsdata.com/callback",
-    prompt: "consent"
-  };
-
-  cca.getAuthCodeUrl(authCodeUrlParameters)
-    .then((response) => {
-      res.redirect(response);  // Redirect user to Microsoft login page
-    })
-    .catch((error) => {
-      console.log('Error generating auth code URL:', error);
-      res.status(500).send('Error initiating login.');
-    });
-});
-
-// OAuth2 Callback Route - Handle response from Azure AD
-app.get('/callback', (req, res) => {
-  const tokenRequest = {
-    code: req.query.code,
-    scopes: ["openid profile offline_access https://graph.microsoft.com/User.Read"],
-    redirectUri: "https://pell-city.bestfitsportsdata.com/callback",
-  };
-
-  cca.acquireTokenByCode(tokenRequest)
-    .then((response) => {
-      console.log("Response: ",JSON.stringify(response, null, 2));
-      req.session.accessToken = response.accessToken;
-      req.session.refreshToken = response.refreshToken || 'No token received'; //Add debugging to check for undefined token object
-      req.session.tokenExpiry = new Date(response.expiresOn).getTime();
-      res.redirect('/homepage.html');  // Redirect to app homepage
-      //Log access and refresh tokens
-      console.log("Access token: ", response.accessToken);
-      console.log("Refresh token: ", response.refreshToken);
-    })
-    .catch((error) => {
-      console.log(JSON.stringify(error));
-      res.status(500).send("Error acquiring tokens");
-    });
-});
 
 // Function to refresh access token
 async function refreshAccessToken(req) {
@@ -213,7 +91,7 @@ async function refreshAccessToken(req) {
           refreshToken: req.session.refreshToken,
           scopes: req.session.isSQLLogin
               ? ["https://database.windows.net/.default"]  // SQL scopes
-              : ["https://graph.microsoft.com/.default"]   // Graph API scopes
+              : ["openid profile offline_access https://graph.microsoft.com/User.Read"]   // Graph API scopes
       };
 
       const refreshResponse = await cca.acquireTokenByRefreshToken(refreshTokenRequest);
@@ -228,9 +106,18 @@ async function refreshAccessToken(req) {
       throw new Error("Token refresh failed. User needs to log in.");
   }
 }
-
-
-
+// Check if token is expired// Middleware to check token and refresh if needed
+async function checkTokenExpiry(req, res, next) {
+  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before actual expiry
+  try {
+    if (!req.session.accessToken || Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
+      await refreshAccessToken(req);  // Refresh or acquire new token
+    }
+    next();
+  } catch (err) {
+    return res.redirect('/login');  // Redirect to login if token invalid
+  }
+}
 
 // Function to connect to the database
 async function connectToDatabase(req) {
@@ -277,6 +164,99 @@ async function connectToDatabase(req) {
   }
 }
 
+async function getToken(req) {
+  const tokenRequestBody = {
+    client_id: config.AZURE_CLIENT_ID,
+    scope: 'openid profile offline_access https://graph.microsoft.com/User.Read',
+    code: req.query.code,  // Authorization code from the request
+    redirect_uri: config.REDIRECT_URI,
+    grant_type: 'authorization_code',
+    client_secret: config.AZURE_CLIENT_SECRET
+  };
+
+  try {
+    const response = await axios.post(`https://login.microsoftonline.com/${config.AZURE_TENANT_ID}/oauth2/v2.0/token`, new URLSearchParams(tokenRequestBody).toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
+    // Store the tokens (access_token, refresh_token)
+    req.session.accessToken = response.data.access_token;
+    req.session.refreshToken = response.data.refresh_token;
+    req.session.tokenExpiry = Date.now() + (response.data.expires_in * 1000);  // Calculate expiry time
+
+    console.log('Access Token:', response.data.access_token);
+    console.log('Refresh Token:', response.data.refresh_token);
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching token:', error.response.data);
+    throw error;
+  }
+}
+
+async function getServicePrincipalToken() {
+  const tokenRequest = {
+    scopes: ["https://database.windows.net/.default"],  // Scope for Azure SQL Database
+  };
+
+  try {
+    // MSAL's acquireTokenByClientCredential will fetch a token for the service principal
+    const response = await cca.acquireTokenByClientCredential(tokenRequest);
+    console.log("Access Token acquired using Service Principal:", response.accessToken);
+    return response.accessToken;
+  } catch (error) {
+    console.error("Failed to acquire token using Service Principal:", error);
+    throw error;
+  }
+}
+
+async function connectToDatabaseWithServicePrincipal() {
+  try {
+    const accessToken = await getServicePrincipalToken();  // Get token using service principal
+
+    const dbConfig = {
+      server: config.DB_SERVER,
+      database: config.DB_DATABASE,
+      authentication: {
+        type: 'azure-active-directory-access-token',
+        options: { token: accessToken }
+      },
+      options: {
+        encrypt: true,
+        connectTimeout: 30000
+      }
+    };
+
+    const pool = await sql.connect(dbConfig);
+    console.log('Connected to the Azure SQL Database.');
+    return pool;
+  } catch (err) {
+    console.error('Database connection failed at startup:', err);
+    throw err;
+  }
+}
+
+
+// Middleware to check token expiration and refresh if necessary
+app.use(async (req, res, next) => {
+  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before actual expiry
+
+  if (req.session.tokenExpiry && Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
+    console.log('Token nearing expiry, attempting to refresh...');
+    try {
+      await refreshAccessToken(req.session.refreshToken, req);
+      console.log('Token refreshed successfully.');
+    } catch (error) {
+      console.log('Failed to refresh token:', error);
+      return res.redirect('/msalLogin');  // Redirect to login if refresh fails
+    }
+  }
+  next();
+});
+
+
 
 // Add API route to connect to the database
 app.get('/connect', async (req, res) => {
@@ -310,8 +290,31 @@ app.get('/connect', async (req, res) => {
 });
 
 
+// OAuth2 Login Route - Redirect to Azure AD for login
+app.get('/msalLogin', (req, res) => {
+  // Logic check for SQL or Graph API access
+  const isSQLLogin = req.session.isSQLLogin;
+  const authCodeUrlParameters = {
+    scopes: isSQLLogin
+      ? ["https://database.windows.net/.default"]  // For Azure SQL Database access
+      : ["openid profile offline_access https://graph.microsoft.com/User.Read"],  // For Graph API access
+    redirectUri: "https://pell-city.bestfitsportsdata.com/callback",
+    prompt: "consent"
+  };
+
+  cca.getAuthCodeUrl(authCodeUrlParameters)
+    .then((response) => {
+      res.redirect(response);  // Redirect user to Microsoft login page
+    })
+    .catch((error) => {
+      console.log('Error generating auth code URL:', error);
+      res.status(500).send('Error initiating login.');
+    });
+});
+
+
 // Add API route to POST plays to the database
-app.post('/api/plays', async (req, res) => {
+app.post('/api/plays', checkTokenExpiry, async (req, res) => {
   try {
     // Use the centralized connectToDatabase function to handle token checks and connection setup
     const pool = await connectToDatabase(req);
@@ -345,22 +348,12 @@ app.post('/api/plays', async (req, res) => {
   }
 });
 
-// Check if token is expired// Middleware to check token and refresh if needed
-async function checkTokenExpiry(req, res, next) {
-  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before actual expiry
-  try {
-    if (!req.session.accessToken || Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
-      await refreshAccessToken(req);  // Refresh or acquire new token
-    }
-    next();
-  } catch (err) {
-    return res.redirect('/login');  // Redirect to login if token invalid
-  }
-}
-
 // Add API route to GET play data from the database
 app.get('/api/plays', checkTokenExpiry, async (req, res) => {
   try {
+    //Check if token is valid
+    await getToken(req);
+
     const pool = await connectToDatabase(req);
     const query = `SELECT 1 AS NUMBER`;
     const result = await pool.request().query(query);
@@ -373,7 +366,7 @@ app.get('/api/plays', checkTokenExpiry, async (req, res) => {
 
 
 // Add API route to delete the most recent play from the database
-app.delete('/api/plays', async (req, res) => {
+app.delete('/api/plays', checkTokenExpiry,async (req, res) => {
   try {
     // Use the centralized connectToDatabase function to handle token checks and connection setup
     const pool = await connectToDatabase(req);
@@ -447,36 +440,19 @@ app.get('/callback', async (req, res) => {
   }
 
   try {
-    // Token request parameters
-    const tokenRequest = {
-      code: authCode,
-      scopes: ["openid", "profile", "offline_access", "https://graph.microsoft.com/User.Read"],  // Ensure this is properly scoped
-      redirectUri: "https://pell-city.bestfitsportsdata.com/callback"
-    };
+    // Call getToken to exchange the auth code for tokens
+    const tokenResponse = await getToken(req);
 
-    // Exchange authorization code for access token
-    const tokenResponse = await cca.acquireTokenByCode(tokenRequest);
+    // Store the access and refresh tokens in session
+    req.session.accessToken = tokenResponse.access_token;
+    req.session.refreshToken = tokenResponse.refresh_token;
 
-    // Store access, refresh tokens, and expiry in session
-    req.session.accessToken = tokenResponse.accessToken;
-    req.session.tokenExpiry = new Date(tokenResponse.expiresOn).getTime();
+    // MSAL uses expiresOn which is a date, so store it directly
+    req.session.tokenExpiry = new Date(tokenResponse.expiresOn).getTime(); // Convert to timestamp
 
-    if (tokenResponse.refreshToken) {
-      req.session.refreshToken = tokenResponse.refreshToken;  // Save refresh token if provided
-    } else {
-      console.log('Refresh token not provided.');
-    }
-
-    // Redirect to homepage or another secure route
     res.redirect('/homepage.html');
   } catch (error) {
     console.error('Error during token exchange:', error);
     res.status(500).send('Error during token exchange.');
   }
 });
-
-
-
-
-
-
