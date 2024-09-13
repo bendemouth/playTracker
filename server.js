@@ -9,8 +9,29 @@ const https = require('https');
 const fs = require('fs');
 require('dotenv').config();
 const axios = require('axios');
+const crypto = require('crypto');
 
+// Helper functions
+function generateCodeVerifier() {
+  return crypto.randomBytes(32).toString('base64url');
+}
 
+function generateCodeChallenge(codeVerifier) {
+  return crypto
+    .createHash('sha256')
+    .update(codeVerifier)
+    .digest('base64url');
+}
+
+function parseJwt(token) {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+
+  return JSON.parse(jsonPayload);
+}
 
 const app = express();
 const port = 25662; //443 HTTPS or 25662 node.js dedicated port
@@ -59,9 +80,7 @@ const msalConfig = {
   }
 };
 
-
 const cca = new msal.ConfidentialClientApplication(msalConfig);
-
 
 // Start the HTTPS server
 https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
@@ -75,65 +94,69 @@ https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
   }
 });
 
-
-
 // Function to refresh access token
 async function refreshAccessToken(req) {
   try {
-      // Log the refresh token for debugging
-      console.log("Refresh token in session:", req.session.refreshToken);
+    const account = req.session.account;  // Retrieve account info from session
 
-      if (!req.session.refreshToken) {
-          throw new Error('No refresh token available. User needs to log in.');
-      }
+    if (account && req.session.refreshToken) {
+      console.log('Using refresh token to acquire new access token.');
 
       const refreshTokenRequest = {
-          refreshToken: req.session.refreshToken,
-          scopes: req.session.isSQLLogin
-              ? ["https://database.windows.net/.default"]  // SQL scopes
-              : ["openid profile offline_access https://graph.microsoft.com/User.Read"]   // Graph API scopes
+        refreshToken: req.session.refreshToken,
+        scopes: ["openid profile offline_access https://graph.microsoft.com/User.Read"]
       };
 
       const refreshResponse = await cca.acquireTokenByRefreshToken(refreshTokenRequest);
 
+      // Update session with new access token and refresh token
       req.session.accessToken = refreshResponse.accessToken;
-      req.session.refreshToken = refreshResponse.refreshToken || req.session.refreshToken;  // Update refresh token if a new one is issued
-      req.session.tokenExpiry = new Date(refreshResponse.expiresOn).getTime();
+      req.session.refreshToken = refreshResponse.refreshToken || req.session.refreshToken;
+      req.session.tokenExpiry = Date.now() + (refreshResponse.expiresOn * 1000);
 
-      console.log("Token successfully refreshed!");
+      console.log("Token successfully refreshed using refresh token.");
+    } else {
+      throw new Error('No refresh token available. User needs to log in.');
+    }
   } catch (error) {
-      console.error('Failed to refresh token:', error);
-      throw new Error("Token refresh failed. User needs to log in.");
+    console.error('Failed to refresh token:', error);
+    throw new Error('Token refresh failed. User needs to log in.');
   }
 }
-// Check if token is expired// Middleware to check token and refresh if needed
+
+
+
+//Middleware to check token and refresh if needed
 async function checkTokenExpiry(req, res, next) {
-  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before actual expiry
+  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5-minute buffer before actual expiration
+  console.log('Current time:', Date.now());
+  console.log('Token expiry:', req.session.tokenExpiry);
+
   try {
     if (!req.session.accessToken || Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
+      console.log('Token is expired or near expiry. Refreshing token...');
       await refreshAccessToken(req);  // Refresh or acquire new token
     }
-    next();
-  } catch (err) {
-    return res.redirect('/login');  // Redirect to login if token invalid
+    next();  // Proceed to the next middleware or route
+  } catch (error) {
+    console.error('Error during token refresh:', error);
+    return res.status(401).send('Token expired or invalid. Please log in again.');
   }
 }
+
 
 // Function to connect to the database
 async function connectToDatabase(req) {
-  // Check if there's a valid access token in the session
-  if (!req.session || !req.session.accessToken) {
+  if (!req.session.accessToken) {
     throw new Error('No access token available. User needs to log in.');
   }
 
-  // Check if the token is nearing expiration and refresh it if necessary
   const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before expiry
   if (req.session.tokenExpiry && Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
     console.log('Access token nearing expiry, attempting to refresh...');
-    await refreshAccessToken(req.session.refreshToken, req);
+    await refreshAccessToken(req);  // Refresh the token if near expiry
   }
 
-  // Proceed with the database connection using the (refreshed) token
   try {
     const dbConfig = {
       server: config.DB_SERVER,
@@ -143,8 +166,8 @@ async function connectToDatabase(req) {
         options: { token: req.session.accessToken }
       },
       options: {
-        encrypt: true,  // Keep connection alive
-        connectTimeout: 30000  // Optional: 30 seconds timeout for database connection
+        encrypt: true,
+        connectTimeout: 30000
       }
     };
 
@@ -153,25 +176,26 @@ async function connectToDatabase(req) {
     return pool;
   } catch (err) {
     console.error('Database connection failed:', err);
-    
 
-  //Clear session
-  if (error.code === 'ELOGIN') {
-    console.log('Clearing session');
-    req.session.destroy(() => res.redirect('/msalLogin'));
-  }
-  throw err;
+    // Handle token errors specifically
+    if (err.code === 'ELOGIN') {
+      console.log('Invalid or expired token. Redirecting to login.');
+      req.session.destroy(() => res.redirect('/msalLogin'));
+    }
+    throw err;
   }
 }
+
 
 async function getToken(req) {
   const tokenRequestBody = {
     client_id: config.AZURE_CLIENT_ID,
     scope: 'openid profile offline_access https://graph.microsoft.com/User.Read',
-    code: req.query.code,  // Authorization code from the request
+    code: req.query.code,
     redirect_uri: config.REDIRECT_URI,
     grant_type: 'authorization_code',
-    client_secret: config.AZURE_CLIENT_SECRET
+    client_secret: config.AZURE_CLIENT_SECRET,
+    code_verifier: req.session.codeVerifier
   };
 
   try {
@@ -181,10 +205,10 @@ async function getToken(req) {
       }
     });
 
-    // Store the tokens (access_token, refresh_token)
+    // Store tokens in the session
     req.session.accessToken = response.data.access_token;
-    req.session.refreshToken = response.data.refresh_token;
-    req.session.tokenExpiry = Date.now() + (response.data.expires_in * 1000);  // Calculate expiry time
+    req.session.refreshToken = response.data.refresh_token;  // Ensure refresh token is stored
+    req.session.tokenExpiry = Date.now() + (response.data.expiresOn * 1000);  // Calculate expiry time
 
     console.log('Access Token:', response.data.access_token);
     console.log('Refresh Token:', response.data.refresh_token);
@@ -195,6 +219,7 @@ async function getToken(req) {
     throw error;
   }
 }
+
 
 async function getServicePrincipalToken() {
   const tokenRequest = {
@@ -292,6 +317,13 @@ app.get('/connect', async (req, res) => {
 
 // OAuth2 Login Route - Redirect to Azure AD for login
 app.get('/msalLogin', (req, res) => {
+
+    //Get codes for PKCE
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+
+    req.session.codeVerifier = codeVerifier; // Store code verifier in session
+
   // Logic check for SQL or Graph API access
   const isSQLLogin = req.session.isSQLLogin;
   const authCodeUrlParameters = {
@@ -299,15 +331,16 @@ app.get('/msalLogin', (req, res) => {
       ? ["https://database.windows.net/.default"]  // For Azure SQL Database access
       : ["openid profile offline_access https://graph.microsoft.com/User.Read"],  // For Graph API access
     redirectUri: "https://pell-city.bestfitsportsdata.com/callback",
-    prompt: "consent"
+    prompt: "consent",
+    codeChallenge: codeChallenge,
+    codeChallengeMethod: "S256",
+    responseMode: "query"
   };
 
   cca.getAuthCodeUrl(authCodeUrlParameters)
-    .then((response) => {
-      res.redirect(response);  // Redirect user to Microsoft login page
-    })
+    .then((response) => res.redirect(response))
     .catch((error) => {
-      console.log('Error generating auth code URL:', error);
+      console.error('Error generating auth code URL:', error);
       res.status(500).send('Error initiating login.');
     });
 });
@@ -351,22 +384,29 @@ app.post('/api/plays', checkTokenExpiry, async (req, res) => {
 // Add API route to GET play data from the database
 app.get('/api/plays', checkTokenExpiry, async (req, res) => {
   try {
-    //Check if token is valid
-    await getToken(req);
+    console.log("Session Data: ", req.session);  // Log session details for debugging
 
-    const pool = await connectToDatabase(req);
+    const pool = await connectToDatabase(req);  // Attempt to connect to the database
     const query = `SELECT 1 AS NUMBER`;
     const result = await pool.request().query(query);
+    
     res.status(200).json(result.recordset);
   } catch (err) {
-    console.error('Database retrieval failed:', err);
-    res.status(500).send('Error accessing database');
+    console.error('Error in /api/plays route:', err);
+    if (err.message.includes('No access token available')) {
+      return res.status(401).json({ message: 'User not authenticated. Please log in.' });
+    } else if (err.code === 'ELOGIN') {
+      console.log('Access token invalid or expired, redirecting to login...');
+      return res.status(401).json({ message: 'Access token invalid or expired. Please log in again.' });
+    } else {
+      console.error('Database retrieval failed:', err);
+      return res.status(500).send('Error accessing database');
+    }
   }
 });
 
-
 // Add API route to delete the most recent play from the database
-app.delete('/api/plays', checkTokenExpiry,async (req, res) => {
+app.delete('/api/plays', checkTokenExpiry, async (req, res) => {
   try {
     // Use the centralized connectToDatabase function to handle token checks and connection setup
     const pool = await connectToDatabase(req);
@@ -435,6 +475,8 @@ app.get('/sqlLogin', (req, res) => {
 app.get('/callback', async (req, res) => {
   const authCode = req.query.code;
 
+  console.log("Authorization code:", authCode);
+
   if (!authCode) {
     return res.status(400).send('Authorization code is missing.');
   }
@@ -442,10 +484,14 @@ app.get('/callback', async (req, res) => {
   try {
     // Call getToken to exchange the auth code for tokens
     const tokenResponse = await getToken(req);
+    const account = parseJwt(tokenResponse.id_token);
 
     // Store the access and refresh tokens in session
     req.session.accessToken = tokenResponse.access_token;
     req.session.refreshToken = tokenResponse.refresh_token;
+    req.session.account = account;
+
+    console.log("Account stored in session:", req.session.account);
 
     // MSAL uses expiresOn which is a date, so store it directly
     req.session.tokenExpiry = new Date(tokenResponse.expiresOn).getTime(); // Convert to timestamp
