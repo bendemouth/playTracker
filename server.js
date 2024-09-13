@@ -387,7 +387,7 @@ app.get('/api/plays', checkTokenExpiry, async (req, res) => {
     console.log("Session Data: ", req.session);  // Log session details for debugging
 
     const pool = await connectToDatabase(req);  // Attempt to connect to the database
-    const query = `SELECT 1 AS NUMBER`;
+    const query = `SELECT * FROM PellCityBoys2425`;
     const result = await pool.request().query(query);
     
     res.status(200).json(result.recordset);
