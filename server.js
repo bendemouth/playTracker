@@ -151,15 +151,23 @@ async function checkTokenExpiry(req, res, next) {
 
 // Function to connect to the database
 let poolPromise = null;
-async function connectToDatabase(req, res) {
-  if (!req.session.accessToken) {
-    throw new Error('No access token available. User needs to log in.');
-  }
+let servicePrincipalToken = null;
+let tokenExpiry = null;
+async function connectToDatabase() {
+  const tokenExpiryBuffer = 5 * 60 * 1000; // 5-minute buffer before actual expiration
 
-  const tokenExpiryBuffer = 5 * 60 * 1000;  // 5 minutes buffer before expiry
-  if (req.session.tokenExpiry && Date.now() >= req.session.tokenExpiry - tokenExpiryBuffer) {
-    console.log('Access token nearing expiry, attempting to refresh...');
-    await refreshAccessToken(req);  // Refresh the token if near expiry
+  // Check if token exists or if it's about to expire, and refresh if necessary
+  if (!servicePrincipalToken || Date.now() >= tokenExpiry - tokenExpiryBuffer) {
+    console.log("Token is expired or about to expire. Acquiring new token...");
+    
+    try {
+      servicePrincipalToken = await getServicePrincipalToken();
+      tokenExpiry = Date.now() + (60 * 60 * 1000); // Assuming token expires in 1 hour
+      console.log("New token acquired. Expires at:", new Date(tokenExpiry));
+    } catch (error) {
+      console.error("Failed to acquire new token:", error);
+      throw error; // Exit the function if token acquisition fails
+    }
   }
 
   if (!poolPromise) {
@@ -169,27 +177,28 @@ async function connectToDatabase(req, res) {
         database: config.DB_DATABASE,
         authentication: {
           type: 'azure-active-directory-access-token',
-          options: { token: req.session.accessToken }
+          options: { token: servicePrincipalToken }  // Use the current token for authentication
         },
         options: {
-          encrypt: true,
+          encrypt: true,  // Required for Azure SQL Database
           connectTimeout: 30000
         }
       };
 
       poolPromise = sql.connect(dbConfig);
-      console.log('Connected to the Azure SQL Database.');
+      console.log('Connected to the Azure SQL Database using service principal.');
     } catch (err) {
       console.error('Database connection failed:', err);
       if (err.code === 'ELOGIN') {
-        console.log('Invalid or expired token. Redirecting to login.');
-        req.session.destroy(() => res.redirect('/index.html'));
+        console.log('Invalid or expired service principal token.');
       }
       throw err;
     }
   }
+
   return poolPromise;
 }
+
 
 async function getToken(req) {
   const tokenRequestBody = {
@@ -320,7 +329,7 @@ app.get('/msalLogin', (req, res) => {
 // Add API route to POST plays to the database
 app.post('/api/plays', checkTokenExpiry, async (req, res) => {
   try {
-    const pool = await connectToDatabase(req, res);
+    const pool = await connectToDatabase();
 
     // Prepare and execute the query to insert play data
     const query = `
@@ -356,7 +365,7 @@ app.get('/api/plays', checkTokenExpiry, async (req, res) => {
   try {
     console.log("Session Data: ", req.session);  // Log session details for debugging
 
-    const pool = await connectToDatabase(req, res);  // Attempt to connect to the database
+    const pool = await connectToDatabase();  // Attempt to connect to the database
     const query = `SELECT * FROM PellCityBoys2425`;
     const result = await pool.request().query(query);
     
@@ -379,7 +388,7 @@ app.get('/api/plays', checkTokenExpiry, async (req, res) => {
 app.delete('/api/plays', checkTokenExpiry, async (req, res) => {
   try {
     // Use the centralized connectToDatabase function to handle token checks and connection setup
-    const pool = await connectToDatabase(req, res);
+    const pool = await connectToDatabase();
 
     // Define the query to delete the most recent play
     const query = `

@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         // Check HTTP response
         if (response.status === 401) {
-            window.location.href = "/msalLogin";
+            window.location.href = "/index.html";
             return;
         }
 
