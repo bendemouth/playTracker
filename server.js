@@ -152,24 +152,35 @@ async function checkTokenExpiry(req, res, next) {
 // Function to connect to the database
 let poolPromise = null;
 let servicePrincipalToken = null;
-let tokenExpiry = null;
-async function connectToDatabase() {
-  const tokenExpiryBuffer = 5 * 60 * 1000; // 5-minute buffer before actual expiration
+let tokenExpiry = null;  
 
-  // Check if token exists or if it's about to expire, and refresh if necessary
-  if (!servicePrincipalToken || Date.now() >= tokenExpiry - tokenExpiryBuffer) {
-    console.log("Token is expired or about to expire. Acquiring new token...");
+async function connectToDatabase() {
+  const tokenExpiryBuffer = 5 * 60 * 1000; 
+
+  // Check if the token is expired or about to expire
+  if (!servicePrincipalToken || !tokenExpiry || Date.now() >= tokenExpiry - tokenExpiryBuffer) {
+    console.log("Token is expired, about to expire, or doesn't exist. Acquiring new token...");
     
     try {
+      // Acquire a new service principal token
       servicePrincipalToken = await getServicePrincipalToken();
-      tokenExpiry = Date.now() + (60 * 60 * 1000); // Assuming token expires in 1 hour
+      tokenExpiry = Date.now() + (60 * 60 * 1000); 
       console.log("New token acquired. Expires at:", new Date(tokenExpiry));
+
+      // Reset connection pool to use the new token
+      if (poolPromise) {
+        console.log("Closing existing connection pool to refresh token.");
+        const pool = await poolPromise; 
+        await pool.close();  
+        poolPromise = null; // Reset pool promise so a new one is created
+      }
     } catch (error) {
       console.error("Failed to acquire new token:", error);
-      throw error; // Exit the function if token acquisition fails
+      throw error; 
     }
   }
 
+  // Create a new connection pool if it doesn't exist
   if (!poolPromise) {
     try {
       const dbConfig = {
@@ -177,15 +188,15 @@ async function connectToDatabase() {
         database: config.DB_DATABASE,
         authentication: {
           type: 'azure-active-directory-access-token',
-          options: { token: servicePrincipalToken }  // Use the current token for authentication
+          options: { token: servicePrincipalToken } 
         },
         options: {
-          encrypt: true,  // Required for Azure SQL Database
+          encrypt: true,  
           connectTimeout: 30000
         }
       };
 
-      poolPromise = sql.connect(dbConfig);
+      poolPromise = sql.connect(dbConfig); // Create the new connection pool promise
       console.log('Connected to the Azure SQL Database using service principal.');
     } catch (err) {
       console.error('Database connection failed:', err);
@@ -196,8 +207,10 @@ async function connectToDatabase() {
     }
   }
 
-  return poolPromise;
+  return poolPromise; 
 }
+
+
 
 
 async function getToken(req) {
