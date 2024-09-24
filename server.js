@@ -87,7 +87,7 @@ https.createServer(sslOptions, app).listen(port, '0.0.0.0', async () => {
   console.log(`HTTPS Server running on port ${port}`);
 
   try {
-    await connectToDatabaseWithServicePrincipal();
+    await connectToDatabase();
     console.log('Connected to the database');
   } catch (error) {
     console.error('Failed to connect to the database:', error);
