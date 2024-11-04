@@ -150,7 +150,7 @@ function displayAveragesByPlayType() {
                 <td>Point</td>
                 <td>${actionAverages['point']}</td>
             </tr>
-            <tr class='table' style="background-color: orange;"
+            <tr class='table' style="background-color: orange;">
                 <td>Dribble Hand-Off</td>
                 <td>${actionAverages['dho']}</td>
             </tr>
