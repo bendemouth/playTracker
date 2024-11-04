@@ -27,7 +27,8 @@ function updateActionMenu(situation) {
             {value: 'default', text: 'Select Action...'},
             {value: 'horns', text: 'Horns'},
             {value: 'pick-roll', text: 'Pick and Roll'},
-            {value: 'point', text: 'Point'}
+            {value: 'point', text: 'Point'},
+            {value: 'dho', text: 'Dribble Hand-Off'}
         ]
     }
     
@@ -252,7 +253,8 @@ function pointsPerAction() {
         'point': [],
         'drag': [],
         'pass-ahead': [],
-        'paint-touch': []
+        'paint-touch': [],
+        'dho': []
     };
 
     for (let i=0; i < playTracker['playNumber'].length; i++) {
@@ -320,6 +322,16 @@ function pointsPerAction() {
             }
         }
 
+        if (playTracker['playAction'][i] === 'dho') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
+                actionAverages['dho'].push(parseInt(playTracker['playResult'][i]));
+            }
+
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
+                actionAverages['dho'].push(0);
+            }
+        }
+
     }     
 
     for (let action in actionAverages) {
@@ -360,6 +372,10 @@ function displayAveragesByPlay() {
             <tr class='table-success'>
                 <td>Point</td>
                 <td>${actionAverages['point']}</td>
+            </tr>
+            <tr class='table' style="background-color: orange;">
+                <td>Dribble Hand-Off</td>
+                <td>${actionAverages['dho']}</td>
             </tr>
         </tbody>
     </table>

@@ -48,7 +48,8 @@ function getAveragesByPlayType() {
         'point': [],
         'drag': [],
         'pass-ahead': [],
-        'paint-touch': []
+        'paint-touch': [],
+        'dho': []
     };
 
     for (let i = 0; i < data.length; i++) {
@@ -73,6 +74,14 @@ function getAveragesByPlayType() {
                 actionAverages['point'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
                 actionAverages['point'].push(0);
+            }
+        }
+        
+        if (data[i]['play-action'] === 'dho') {
+            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
+                actionAverages['dho'].push(parseInt(data[i]['play-result']));
+            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
+                actionAverages['dho'].push(0);
             }
         }
 
@@ -140,6 +149,10 @@ function displayAveragesByPlayType() {
             <tr class='table-success'>
                 <td>Point</td>
                 <td>${actionAverages['point']}</td>
+            </tr>
+            <tr class='table' style="background-color: orange;"
+                <td>Dribble Hand-Off</td>
+                <td>${actionAverages['dho']}</td>
             </tr>
         </tbody>
     </table>
