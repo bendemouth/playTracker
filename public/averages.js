@@ -49,7 +49,8 @@ function getAveragesByPlayType() {
         'drag': [],
         'pass-ahead': [],
         'paint-touch': [],
-        'dho': []
+        'dho': [],
+        'post-entry': []
     };
 
     for (let i = 0; i < data.length; i++) {
@@ -109,6 +110,14 @@ function getAveragesByPlayType() {
             }
         }
 
+        if (data[i]['play-action'] === 'post-entry') {
+            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
+                actionAverages['post-entry'].push(parseInt(data[i]['play-result']));
+            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
+                actionAverages['post-entry'].push(0);
+            }
+        }
+
     }
 
     for (let action in actionAverages) {
@@ -153,6 +162,10 @@ function displayAveragesByPlayType() {
             <tr class='table' style="background-color: orange;">
                 <td>Dribble Hand-Off</td>
                 <td>${actionAverages['dho']}</td>
+            </tr>
+            <tr class='table-light'>
+                <td>Post Entry</td>
+                <td>${actionAverages['post-entry']}</td>
             </tr>
         </tbody>
     </table>
@@ -202,12 +215,10 @@ function getAveragesByPlayer() {
         'brodyGossett': [],
         'jemarcClegg': [],
         'connorChandler': [],
-        'tristanAnderson': [],
         'elliotHuckaby': [],
         'khaliThompson': [],
-        'jordanWoods': [],
         'jjHamby': [],
-        'evanBlack': []
+        'eliBeckett': []
     };
 
     for (let i = 0; i < data.length; i++) {
@@ -300,14 +311,6 @@ function getAveragesByPlayer() {
             }
         }
 
-        if (data[i]['players-involved'].includes('tristan-anderson')) {
-            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['tristanAnderson'].push(parseInt(data[i]['play-result']));
-            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['tristanAnderson'].push(0);
-            }
-        }
-
         if (data[i]['players-involved'].includes('elliot-huckaby')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
                 playerAverages['elliotHuckaby'].push(parseInt(data[i]['play-result']));
@@ -324,14 +327,6 @@ function getAveragesByPlayer() {
             }
         }
 
-        if (data[i]['players-involved'].includes('jordan-woods')) {
-            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['jordanWoods'].push(parseInt(data[i]['play-result']));
-            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['jordanWoods'].push(0);
-            }
-        }
-
         if (data[i]['players-involved'].includes('jj-hamby')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
                 playerAverages['jjHamby'].push(parseInt(data[i]['play-result']));
@@ -340,11 +335,11 @@ function getAveragesByPlayer() {
             }
         }
 
-        if (data[i]['players-involved'].includes('evan-black')) {
+        if (data[i]['players-involved'].includes('eli-beckett')) {
             if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['evanBlack'].push(parseInt(data[i]['play-result']));
+                playerAverages['eliBeckett'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['evanBlack'].push(0);
+                playerAverages['eliBeckett'].push(0);
             }
         }
         

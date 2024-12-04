@@ -28,7 +28,8 @@ function updateActionMenu(situation) {
             {value: 'horns', text: 'Horns'},
             {value: 'pick-roll', text: 'Pick and Roll'},
             {value: 'point', text: 'Point'},
-            {value: 'dho', text: 'Dribble Hand-Off'}
+            {value: 'dho', text: 'Dribble Hand-Off'},
+            {value: 'post-entry', text: 'Post Entry'}
         ]
     }
     
@@ -254,7 +255,8 @@ function pointsPerAction() {
         'drag': [],
         'pass-ahead': [],
         'paint-touch': [],
-        'dho': []
+        'dho': [],
+        'post-entry': []
     };
 
     for (let i=0; i < playTracker['playNumber'].length; i++) {
@@ -332,6 +334,16 @@ function pointsPerAction() {
             }
         }
 
+        if (playTracker['playAction'][i] === 'post-entry') {
+            if (playTracker['playResult'][i] !== 'turnover' && playTracker['playResult'][i] !== 'end-of-period') {
+                actionAverages['post-entry'].push(parseInt(playTracker['playResult'][i]));
+            }
+
+            else if (playTracker['playResult'][i] === 'turnover' || playTracker['playResult'][i] === 'end-of-period') {
+                actionAverages['post-entry'].push(0);
+            }
+        }
+
     }     
 
     for (let action in actionAverages) {
@@ -376,6 +388,10 @@ function displayAveragesByPlay() {
             <tr class='table' style="background-color: orange;">
                 <td>Dribble Hand-Off</td>
                 <td>${actionAverages['dho']}</td>
+            </tr>
+            <tr class='table-light'>
+                <td>Post Entry</td>
+                <td>${actionAverages['post-entry']}</td>
             </tr>
         </tbody>
     </table>
@@ -425,12 +441,10 @@ function pointsPerPlayer() {
         brodyGossett: [],
         jemarcClegg: [],
         connorChandler: [],
-        tristanAnderson: [],
         elliotHuckaby: [],
         khaliThompson: [],
-        jordanWoods: [],
         jjHamby: [],
-        evanBlack: []
+        eliBeckett: []
     };
 
 
@@ -482,28 +496,20 @@ function pointsPerPlayer() {
             playerAverages['connorChandler'].push(playResult);
         }
 
-        if (playTracker['players'][i].includes('tristan-anderson')) {
-            playerAverages['tristanAnderson'].push(playResult);
-        }
-
-        if(playTracker['players'][i].includes('elliot-huckaby')) {
+        if (playTracker['players'][i].includes('elliot-huckaby')) {
             playerAverages['elliotHuckaby'].push(playResult);
         }
 
-        if(playTracker['players'][i].includes('khali-thompson')) {
+        if (playTracker['players'][i].includes('khali-thompson')) {
             playerAverages['khaliThompson'].push(playResult);
         }
 
-        if(playTracker['players'][i].includes('jordan-woods')) {
-            playerAverages['jordanWoods'].push(playResult);
-        }
-
-        if(playTracker['players'][i].includes('jj-hamby')) {
+        if (playTracker['players'][i].includes('jj-hamby')) {
             playerAverages['jjHamby'].push(playResult);
         }
 
-        if(playTracker['players'][i].includes('evan-black')) {
-            playerAverages['evanBlack'].push(playResult);
+        if (playTracker['players'][i].includes('eli-beckett')) {
+            playerAverages['eliBeckett'].push(playResult);
         }
     }
 
@@ -580,10 +586,6 @@ function displayAveragesByPlayer() {
                 <td>${playerAverages['connorChandler']}</td>
             </tr>
             <tr>
-                <td>Tristan Anderson</td>
-                <td>${playerAverages['tristanAnderson']}</td>
-            </tr>
-            <tr>
                 <td>Elliot Huckaby</td>
                 <td>${playerAverages['elliotHuckaby']}</td>
             </tr>
@@ -592,18 +594,12 @@ function displayAveragesByPlayer() {
                 <td>${playerAverages['khaliThompson']}</td>
             </tr>
             <tr>
-                <td>Jordan Woods</td>
-                <td>${playerAverages['jordanWoods']}</td>
-            </tr>
-
-            <tr>
                 <td>JJ Hamby</td>
                 <td>${playerAverages['jjHamby']}</td>
             </tr>
-
             <tr>
-                <td>Evan Black</td>
-                <td>${playerAverages['evanBlack']}</td>
+                <td>Eli Beckett</td>
+                <td>${playerAverages['eliBeckett']}</td>
             </tr>
         </tbody>
     </table>
