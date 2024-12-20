@@ -432,7 +432,6 @@ function pointsPerPlayer() {
     let playerAverages = {
         loganPreuss: [],
         sawyerGinn: [],
-        djVerges: [],
         treyKuz: [],
         ethanIsbell: [],
         tylerKuz: [],
@@ -458,10 +457,6 @@ function pointsPerPlayer() {
 
         if (playTracker['players'][i].includes('sawyer-ginn')) {
             playerAverages['sawyerGinn'].push(playResult);
-        }
-
-        if (playTracker['players'][i].includes('dj-verges')) {
-            playerAverages['djVerges'].push(playResult);
         }
         
         if (playTracker['players'][i].includes('trey-kuz')) {
@@ -548,10 +543,6 @@ function displayAveragesByPlayer() {
             <tr>
                 <td>Sawyer Ginn</td>
                 <td>${playerAverages['sawyerGinn']}</td>
-            </tr>
-            <tr>
-                <td>DJ Verges</td>
-                <td>${playerAverages['djVerges']}</td>
             </tr>
             <tr>    
                 <td>Trey Kuz</td>   

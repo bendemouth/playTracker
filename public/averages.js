@@ -206,7 +206,6 @@ function getAveragesByPlayer() {
     let playerAverages = {
         'loganPreuss': [],
         'sawyerGinn': [],
-        'djVerges': [],
         'treyKuz': [],
         'ethanIsbell': [],
         'tylerKuz': [],
@@ -236,14 +235,6 @@ function getAveragesByPlayer() {
                 playerAverages['sawyerGinn'].push(parseInt(data[i]['play-result']));
             } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
                 playerAverages['sawyerGinn'].push(0);
-            }
-        }
-
-        if (data[i]['players-involved'].includes('dj-verges')) {
-            if (data[i]['play-result'] !== 'turnover' && data[i]['play-result'] !== 'end-of-period') {
-                playerAverages['djVerges'].push(parseInt(data[i]['play-result']));
-            } else if (data[i]['play-result'] === 'turnover' || data[i]['play-result'] === 'end-of-period' ) {
-                playerAverages['djVerges'].push(0);
             }
         }
 
